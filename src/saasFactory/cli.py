@@ -1,6 +1,6 @@
 import argparse
 import os
-from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile
+from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot
 
 
 
@@ -23,9 +23,28 @@ def main():
         default="."
     )
 #---------------------------------------------------------------------------------------------------------
-    # `configure` command 
-    configure_parser = subparsers.add_parser(
+    # `vps` command 
+        # can do sfy vps create -> vps_create_parser
+        # cad do sfy vps up -> vps_up_parser
+        # can do sfy vps down -> vps_down_parser
+        # can do sfy vps list -> vps_list_parser
+
+    vps_parser = subparsers.add_parser(
         "vps", help="Create a VPS instance for the project"
+    )
+    vps_subparsers = vps_parser.add_subparsers(dest="vps_command", required=True)
+
+
+    vps_create_parser = vps_subparsers.add_parser(
+        "create", help="Create a new VPS instance"
+    )
+    vps_create_parser.add_argument(
+        "--provider", type=str, help="Cloud provider for the VPS instance",
+        required=True
+    )
+    vps_create_parser.add_argument(
+        "--name", type=str, help="Name of the VPS instance",
+        required=False
     )
 
 
@@ -43,6 +62,9 @@ def main():
     # Dispatch based on the command
     if args.command == "init":
         handle_init(args)
+    elif args.command == "vps":
+        if args.vps_command == "create":
+            handle_vps_create(args)
     elif args.command == "delete":
         handle_delete(args)
 
@@ -58,7 +80,14 @@ def handle_init(args):
     createSFConfigFile(project_root_folder, project_name)
     
     
-
+def handle_vps_create(args):
+    if findProjectRoot() is None:
+        print("No project found. Please run this command from the project root.")
+        return
+    
+    print(f"Creating VPS instance with provider: {args.provider}")
+    if args.name:
+        print(f"Name of the VPS instance: {args.name}")
 
 def handle_delete(args):
     if args.force:

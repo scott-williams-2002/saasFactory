@@ -41,3 +41,10 @@ def createSFConfigFile(project_path, project_name):
     except Exception as e:
         print(f"Error creating sf_config.yaml file: {e}")
 
+
+def findProjectRoot():
+    current_dir = os.getcwd()
+    config_path = os.path.join(current_dir, "sf_config.yaml")
+    if os.path.exists(config_path):
+        return config_path
+    return None
