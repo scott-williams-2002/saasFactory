@@ -1,0 +1,17 @@
+bcrypt==4.2.1
+certifi==2025.1.31
+cffi==1.17.1
+charset-normalizer==3.4.1
+coolipy==0.0.8
+cryptography==44.0.1
+Deprecated==1.2.18
+idna==3.10
+linode_api4==5.27.0
+paramiko==3.5.1
+pip==25.0.1
+polling==0.3.2
+pycparser==2.22
+PyNaCl==1.5.0
+requests==2.32.3
+urllib3==2.3.0
+wrapt==1.17.2
