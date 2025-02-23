@@ -1,2 +1,6 @@
+# environment
 .env
 .venv/
+
+#Random Scripts
+secretinfoinside.py

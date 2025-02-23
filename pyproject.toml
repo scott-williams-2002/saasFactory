@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "requests>=2.32.3"]
+build-backend = "setuptools.build_meta"
+
+
+
+[project]
+name = "saasFactory"
+version = "0.0.1"
+authors = [
+  { name="Scott Williams", email="scottwilliams02@myyahoo.com" },
+]
+maintainers = [
+  { name="Scott Williams", email="scottwilliams02@myyahoo.com" },
+]
+description = "CLI Tool to Programatically Configure Coolify on a (Linode) VPS and Quickly Deploy Next.js Apps"
+keywords = ["coolify", "deployment tools", "Next.js", "automation", "self-hosted"]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+     "requests>=2.32.3"
+]
+
+[project.urls]
+Homepage = "https://github.com/scott-williams-2002/saasFactory"
+Repository = "https://github.com/scott-williams-2002/saasFactory"
+
+[tool.setuptools]
+packages = ["saasFactory"]
