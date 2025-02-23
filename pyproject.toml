@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "requests>=2.32.3"]
+requires = ["setuptools>=61.0", "requests>=2.32.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
@@ -32,5 +32,10 @@ dependencies = [
 Homepage = "https://github.com/scott-williams-2002/saasFactory"
 Repository = "https://github.com/scott-williams-2002/saasFactory"
 
+[project.scripts]
+sfy = "saasFactory.cli:main"
+
+
 [tool.setuptools]
+package-dir = {"" = "src"}
 packages = ["saasFactory"]
