@@ -1,4 +1,5 @@
 import os
+import datetime
 
 def createProjectDir(projectName):
     try:
@@ -23,3 +24,20 @@ def createEnvFile(project_path):
             print(f"Created .env file in: {env_file_path}")
     except Exception as e:
         print(f"Error creating .env file: {e}")
+
+
+def createSFConfigFile(project_path, project_name):
+    config_file_name = "sf_config.yaml"
+    try:
+        if os.path.exists(os.path.join(project_path, config_file_name)):
+            print("Project already initialized.")
+        else:
+            config_file_path = os.path.join(project_path, config_file_name)
+            with open(config_file_path, "w") as config_file:
+                config_file.write(f"project_name: {project_name}\n")
+                config_file.write(f"created_at: {datetime.datetime.now()}\n")
+            config_file.close()
+            print(f"Created sf_config.yaml file in: {config_file_path}")
+    except Exception as e:
+        print(f"Error creating sf_config.yaml file: {e}")
+

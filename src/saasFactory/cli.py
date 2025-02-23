@@ -1,6 +1,6 @@
 import argparse
 import os
-from saasFactory.helpers.cli_util import createProjectDir, createEnvFile
+from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile
 
 
 
@@ -9,8 +9,7 @@ def main():
         description="saasFactory is a CLI tool to make Coolify setup and deployment extremely easy."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-
-
+#---------------------------------------------------------------------------------------------------------
     # `init` command
     init_parser = subparsers.add_parser(
         "init", help="Initialize a new saasFactory project"
@@ -23,6 +22,13 @@ def main():
         "--path", type=str, help="Path where the project should be created",
         default="."
     )
+#---------------------------------------------------------------------------------------------------------
+    # `configure` command 
+    configure_parser = subparsers.add_parser(
+        "vps", help="Create a VPS instance for the project"
+    )
+
+
 
     # `delete` command
     delete_parser = subparsers.add_parser(
@@ -47,8 +53,9 @@ def handle_init(args):
     project_name = args.name or os.path.basename(project_path_input)
     project_root_folder = createProjectDir(project_name)
 
-    #call function that creates a .env file in the root project folder
+    #call function that creates a .env file and sf_config.yaml in the root project folder
     createEnvFile(project_root_folder)
+    createSFConfigFile(project_root_folder, project_name)
     
     
 
