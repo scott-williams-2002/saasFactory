@@ -1,7 +1,7 @@
 import argparse
 import os
-from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot
-
+from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar
+from saasFactory.linode.utils import get_linode_api_token
 
 
 def main():
@@ -83,6 +83,14 @@ def handle_init(args):
 def handle_vps_create(args):
     if findProjectRoot() is None:
         print("No project found. Please run this command from the project root.")
+        return
+    if (args.provider == "linode" or args.provider == "Linode"):
+        # get API token from user input and add to .env
+        linode_api_token = get_linode_api_token()
+        addEnvVar("LINODE_API_TOKEN", linode_api_token)
+        
+    else:
+        print("Invalid provider. Please provide a valid provider.")
         return
     
     print(f"Creating VPS instance with provider: {args.provider}")

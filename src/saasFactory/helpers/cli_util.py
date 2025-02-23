@@ -2,6 +2,8 @@ import os
 from typing import Any, Dict, List, Tuple
 from datetime import datetime
 
+CONFIG_FILE_NAME = "sf_config.yaml"
+
 
 def createProjectDir(projectName: str) -> str|None:
     """
@@ -57,19 +59,18 @@ def createSFConfigFile(project_path: str, project_name: str) -> None:
     Returns:
         None
     """
-    config_file_name = "sf_config.yaml"
     try:
-        if os.path.exists(os.path.join(project_path, config_file_name)):
+        if os.path.exists(os.path.join(project_path, CONFIG_FILE_NAME)):
             print("Project already initialized.")
         else:
-            config_file_path = os.path.join(project_path, config_file_name)
+            config_file_path = os.path.join(project_path, CONFIG_FILE_NAME)
             with open(config_file_path, "w") as config_file:
                 config_file.write(f"project_name: {project_name}\n")
                 config_file.write(f"created_at: {datetime.datetime.now()}\n")
             config_file.close()
-            print(f"Created sf_config.yaml file in: {config_file_path}")
+            print(f"Created {CONFIG_FILE_NAME} file in: {config_file_path}")
     except Exception as e:
-        print(f"Error creating sf_config.yaml file: {e}")
+        print(f"Error creating {CONFIG_FILE_NAME} file: {e}")
 
 
 def findProjectRoot() -> str|None:
@@ -77,10 +78,34 @@ def findProjectRoot() -> str|None:
     Finds the root directory of the project by looking for the sf_config.yaml file.
 
     Returns:
-        str: The path to the sf_config.yaml file if found, otherwise None.
+        str: The path to the project root directory if found, otherwise None.
     """
     current_dir = os.getcwd()
-    config_path = os.path.join(current_dir, "sf_config.yaml")
+    config_path = os.path.join(current_dir, CONFIG_FILE_NAME)
     if os.path.exists(config_path):
-        return config_path
+        return current_dir
     return None
+
+def addEnvVar(env_var: str, value: str) -> None:
+    """
+    Adds an environment variable to the .env file in the project directory.
+
+    Args:
+        env_var (str): The name of the environment variable.
+        value (str): The value of the environment variable.
+
+    Returns:
+        None
+    """
+    project_root = findProjectRoot()
+    if project_root is None:
+        print("No project found. Please run this command from the project root.")
+        return
+
+    env_file_path = os.path.join(project_root, ".env")
+    try:
+        with open(env_file_path, "a") as env_file:
+            env_file.write(f"{env_var.upper()}={value}\n")
+        print(f"Added environment variable '{env_var.upper()}' to .env file.")
+    except Exception as e:
+        print(f"Error adding environment variable to .env file: {e}")
