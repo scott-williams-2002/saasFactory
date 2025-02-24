@@ -6,6 +6,7 @@ SSH_KEY_DIR_NAME = "ssh_keys"
 
 #Environment Variable Names:
 LINODE_API_TOKEN_ENV_VAR = "LINODE_API_TOKEN"
+VPS_ROOT_PASSWORD_ENV_VAR = "VPS_ROOT_PASSWORD"
 
 #Configurations Raw:
 DEFAULT_LINODE_VPS_CONFIG = {

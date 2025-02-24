@@ -112,14 +112,28 @@ def addEnvVar(env_var: str, value: str) -> bool:
         # Check if the environment variable already exists
         with open(env_file_path, "r") as env_file:
             lines = env_file.readlines()
+        
+        with open(env_file_path, "w") as env_file:
             for line in lines:
                 if line.startswith(f"{env_var.upper()}="):
                     print(f"Environment variable '{env_var.upper()}' already exists in .env file.")
-                    return True
-
-        # Add the environment variable if it does not exist
-        with open(env_file_path, "a") as env_file:
+                    print(f"1. Keep existing value: {line.strip()}")
+                    print(f"2. Replace with new value: {env_var.upper()}={value}")
+                    choice = input("Choose an option (1 or 2): ").strip()
+                    if choice == '1':
+                        env_file.write(line)
+                        return True
+                    elif choice == '2':
+                        continue
+                    else:
+                        print("Invalid choice. Please enter 1 or 2.")
+                        return False
+                else:
+                    env_file.write(line)
+            
+            # Add the environment variable if it does not exist or was replaced
             env_file.write(f"{env_var.upper()}={value}\n")
+        
         print(f"Added environment variable '{env_var.upper()}' to .env file.")
         return True
     except Exception as e:
