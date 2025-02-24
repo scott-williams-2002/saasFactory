@@ -1,7 +1,7 @@
 import argparse
 import os
 from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, yes_no_prompt
-from saasFactory.linode.utils import get_linode_api_token, testLinodeKey
+from saasFactory.linode.utils import get_linode_api_token, testLinodeKey, addLinodeConfigs
 
 LINODE_API_TOKEN_ENV_VAR = "LINODE_API_TOKEN"
 DEFAULT_LINODE_VPS_CONFIG = {
@@ -115,8 +115,14 @@ def handle_vps_create(args):
             additional_text=DEFAULT_LINODE_VPS_CONFIG_TEXT)
         if defaults_choice:
             print("Using default configurations for the VPS instance.")
+            if(not addLinodeConfigs(LINODE_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG)):
+                print("VPS Configuration Failure.")
+                return
         else:
             print("Collecting configuration parameters for the VPS instance.")
+            if(not addLinodeConfigs(LINODE_API_TOKEN_ENV_VAR)):
+                print("VPS Configuration Failure.")
+                return
             # collect the configuration parameters for the VPS instance
             #vps_instance_config = collectVPSInstanceConfig()
             #print(f"VPS Instance Configuration: {vps_instance_config}")

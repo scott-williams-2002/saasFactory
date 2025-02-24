@@ -2,6 +2,7 @@ import os
 import yaml
 from typing import Optional
 from datetime import datetime
+from tabulate import tabulate
 
 CONFIG_FILE_NAME = "sf_config.yaml"
 
@@ -127,25 +128,29 @@ def addEnvVar(env_var: str, value: str) -> bool:
         return False
     
 
-def get_choice(options):
+def get_choice(options:list[str], use_table: bool = False, table_headers: list[str] = None) -> int:
     """
     Display a menu of options and return the user's choice.
 
     Args:
         options (List[str]): A list of options to choose from.
+        use_table (bool): Whether to display the options in a table format.
+        table_headers (List[str]): A list of column headers for the table.
 
     Returns:
-        str: The selected option.
+        int: The index of the selected option.
     """
     while True:
         print("Choose an option:")
-        for i, option in enumerate(options):
-            print(f"[{i}] {option}")
-        
+        if use_table:
+            print(tabulate(options, headers=table_headers, tablefmt="fancy_grid"))
+        else:
+            for i, option in enumerate(options):
+                print(f"[{i}] {option}")
         try:
             choice = int(input("Enter the number for your choice: "))
             if 0 <= choice < len(options):
-                return options[choice]
+                return choice
             else:
                 print("Invalid number. Please select a valid option.")
         except ValueError:
