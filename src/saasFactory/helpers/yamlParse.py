@@ -37,13 +37,25 @@ class YAMLParser:
         try:
             if not isinstance(data, dict):
                 raise ValueError("Input data must be a dictionary.")
-            current_data = self.read()
+            current_data = self.read() or {}
 
-            # Merge the new data with the existing data
-            merged_data = {**current_data, **data}
+            # Check for overlapping keys
+            overlapping_keys = current_data.keys() & data.keys()
+            if overlapping_keys:
+                for key in overlapping_keys:
+                    if current_data[key] != data[key]:
+                        print(f"Conflict detected for key '{key}':")
+                        print(f"  1. Current value: {current_data[key]}")
+                        print(f"  2. New value: {data[key]}")
+                        choice = input("Choose the value to keep (1 or 2): ")
+                        if choice == '2':
+                            current_data[key] = data[key]
+            else:
+                # Merge the new data with the existing data
+                current_data.update(data)
 
             with open(self.file_path, 'w') as file:
-                yaml.safe_dump(merged_data, file, default_flow_style=False)
+                yaml.safe_dump(current_data, file, default_flow_style=False)
             return True
         except Exception as e:
             print(f"Error appending data to {os.path.basename(self.file_path)}: {e}")
