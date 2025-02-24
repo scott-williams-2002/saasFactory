@@ -6,9 +6,12 @@ from linode_api4.paginated_list import PaginatedList
 from saasFactory.helpers.cli_util import CONFIG_FILE_NAME, findProjectRoot, get_choice
 from saasFactory.helpers.yamlParse import YAMLParser
 from typing import Optional
-import yaml
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
 
+SSH_KEY_DIR_NAME = "ssh_keys"
 
 def get_linode_api_token() -> str:
     """
@@ -129,7 +132,62 @@ def mb_to_gb(mb: int) -> int:
         int: The value converted to gigabytes.
     """
     return mb // 1024
+
+
+def generate_ssh_key_pair(key_name: str, passphrase: str = None) -> str|None:
+    """
+    Generate an SSH key pair and return the public key in Linode-compatible format.
     
+    Args:
+        key_name (str): Name for the key pair files
+        key_dir (str): Directory to save keys (default: ssh_keys)
+        passphrase (str): Optional passphrase for private key encryption
+    
+    Returns:
+        str: Public key string in Linode-compatible format
+    """
+    # create key_dir in project directory
+    project_root = findProjectRoot()
+    if project_root is None:
+        print("No project found. Please run this command from the project root.")
+        return None
+    key_dir = os.path.join(project_root, SSH_KEY_DIR_NAME)
+    
+    if not os.path.exists(key_dir):
+        os.makedirs(key_dir, mode=0o700) #mode 0o700: rwx for owner only
+    
+    # Generate RSA key pair
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=4096,
+        backend=default_backend()
+    )
+    
+    # Serialize private key
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.BestAvailableEncryption(passphrase.encode()) if passphrase else serialization.NoEncryption()
+    )
+    
+    # Serialize public key
+    public_key = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.OpenSSH,
+        format=serialization.PublicFormat.OpenSSH
+    )
+    
+    # Write keys to files
+    private_path = os.path.join(key_dir, f"{key_name}")
+    public_path = os.path.join(key_dir, f"{key_name}.pub")
+    
+    with open(private_path, 'wb') as f:
+        f.write(private_pem)
+    os.chmod(private_path, 0o600)
+    
+    with open(public_path, 'wb') as f:
+        f.write(public_key)
+    
+    return public_key.decode('utf-8')
 
 def addLinodeConfigs(token_env_var: str, configsDict: Optional[dict] = None) -> bool:
     """

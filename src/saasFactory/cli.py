@@ -7,7 +7,7 @@ LINODE_API_TOKEN_ENV_VAR = "LINODE_API_TOKEN"
 DEFAULT_LINODE_VPS_CONFIG = {
     "region": "us-central",
     "type": "g6-standard-1",
-    "image": "Ubuntu 24.04 LTS"
+    "image": "linode/ubuntu24.04"
 }
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
 LINODE_VPS_CONFIG_INPUT_OPTIONS = ["region", "type", "image", "root_pass"]
@@ -35,8 +35,7 @@ def main():
 #---------------------------------------------------------------------------------------------------------
     # `vps` command 
         # can do sfy vps create -> vps_create_parser
-        # cad do sfy vps up -> vps_up_parser
-        # can do sfy vps down -> vps_down_parser
+        # cad do sfy vps up -> vps_up_parser (need to be inside root project folder)      # can do sfy vps down -> vps_down_parser
         # can do sfy vps list -> vps_list_parser
 
     vps_parser = subparsers.add_parser(
