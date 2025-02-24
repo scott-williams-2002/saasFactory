@@ -1,11 +1,14 @@
-import linode_api4
+from typing import Optional
+from linode_api4 import LinodeClient
+from linode_api4.objects import Image
+from linode_api4.paginated_list import PaginatedList
 import os
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
+from saasFactory.helpers.yamlParse import YAMLParser
 from saasFactory.utils.globals import SSH_KEY_DIR_NAME, VPS_ROOT_PASSWORD_ENV_VAR, CONFIG_FILE_NAME
-from saasFactory.utils.cli import findProjectRoot
-from saasFactory.utils.cli import addEnvVar
+from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb
 
 #abstract VPS class
 class VPSProvider:
@@ -67,17 +70,6 @@ class VPSProvider:
 
         return public_key.decode('utf-8')
     
-    def mb_to_gb(self, mb: int) -> int:
-        """
-        Convert megabytes to gigabytes.
-
-        Args:
-            mb (int): The value in megabytes.
-
-        Returns:
-            int: The value converted to gigabytes.
-        """
-        return mb // 1024
     
     def get_root_password(self, min_lenght: int = 8) -> None:
         """
@@ -102,14 +94,145 @@ class VPSProvider:
         if not addEnvVar(VPS_ROOT_PASSWORD_ENV_VAR, password):
             print("Error adding root password to .env file.")
     
+    
     def test_token_client(self):
         """
-        Test the Linode API token by creating a Linode client.
+        Test the Linode API token by creating a VPS client and printing some user info.
         """
         raise
     
-    def configure_instance(self, **kwargs: dict) -> None:
+    def configure_instance(self, **kwargs: dict) -> bool:
         """
         Configure the VPS instance with the given parameters.
         """
         raise NotImplementedError("Subclasses must implement this method.")
+    
+
+
+
+
+#Linode VPS provider class
+class LinodeProvider(VPSProvider):
+    def __init__(self, api_token: str):
+        super().__init__(api_token)
+        self.linode_client = LinodeClient(self.api_token)
+
+    def getLinodeImageOptions(self, image_vendor: str = "ubuntu") -> list[Image]:
+        """
+        Get a list of Linode image options available to the user.
+
+        Args:
+            image_vendor (str): The vendor of the images to retrieve (default: "ubuntu").
+
+        Returns:
+            list[Image]|None: A list of Linode images available to the user, or None if an error occurred.
+        """
+        try:
+            images = self.linode_client.images(Image.vendor == image_vendor)
+            return images
+        except Exception as e:
+            print(f"Error getting Linode image options: {e}")
+            None
+    
+    def getLinodeRegionOptions(self) -> list[str]|None:
+        """
+        Get a list of Linode region options available to the user.
+
+        Returns:
+            list[str]|None: A list of Linode regions available to the user, or None if an error occurred.
+        """
+        try:
+            regions = self.linode_client.regions()
+            return [region.id for region in regions]
+        except Exception as e:
+            print(f"Error getting Linode region options: {e}")
+            return None
+
+    def getLinodeTypeOptions(self) -> PaginatedList|None:
+        """
+        Get a list of Linode plan options (linode types) available to the user.
+
+        Returns:
+            list[str]|None: A list of Linode types available to the user, or None if an error occurred.
+        """
+        try:
+            plans = self.linode_client.linode.types()
+            return plans
+        except Exception as e:
+            print(f"Error getting Linode type options: {e}")
+            return None
+        
+    def test_token_client(self):
+        """
+        Test the Linode API token by using the client to get the user account information.
+        """
+        try:
+            users = self.linode_client.account.users()
+            print(f"Linode API Token is valid. Authenticated as: {''.join([user.username for user in users])}")
+            return True
+        except Exception as e:
+            print(f"Error Validating Linode API Token. Client Error: {e}")
+            return False
+        
+    def configure_instance(self, configsDict: Optional[dict] = None) -> bool:
+        """
+        Add Linode configurations to the CONFIG_FILE_NAME file in the project root directory.
+
+        Args:
+            token_env_var (str): The name of the Linode API Token environment variable.
+            configsDict (Optional[dict]): A dictionary containing Linode configurations.
+
+        Returns:
+            bool: True if the configurations were added successfully, False otherwise.
+        """
+        project_root = findProjectRoot()
+        if project_root is None:
+            print("No project found. Please run this command from the project root.")
+            return False
+        
+        config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
+        sf_config_parser = YAMLParser(config_file_path)
+    
+        if configsDict is not None:
+            default_configs = {
+                "provider": "linode",
+                "vps_configs": configsDict
+            }
+            if not sf_config_parser.append(default_configs):
+                print("Error adding Linode configurations to sf_config.yaml file.")
+                return False
+            return True
+        else:
+            images = self.getLinodeImageOptions()
+            regions = self.getLinodeRegionOptions()
+            types = self.getLinodeTypeOptions()
+    
+            if images is None or regions is None or types is None:
+                print("Error requesting Linode configuration options.")
+                return False
+            
+    
+            image_choice_index = get_user_choice([image.label for image in images])
+            region_choice_index = get_user_choice(regions)
+            type_format_headers = ["#", "vCPUs", "RAM (GiB)", "Disk (GiB)", "$/hr", "$/mo", "label"]
+            type_format_options = [[str(i), str(type.vcpus), str(mb_to_gb(type.memory)), str(mb_to_gb(type.disk)), str(type.price.hourly), str(type.price.monthly), type.label] for i, type in enumerate(types)]
+            type_choice_index = get_user_choice(type_format_options, use_table=True, table_headers=type_format_headers)
+    
+            print(f"Image: {images[image_choice_index].id}")
+            print(f"Region: {regions[region_choice_index]}")
+            print(f"Type: {types[type_choice_index]}")
+            
+            new_configs = {
+                "provider": "linode",
+                "vps_configs": {
+                    "image": images[image_choice_index].id,
+                    "region": regions[region_choice_index],
+                    "type": types[type_choice_index].id
+                    
+                }
+            }
+            if not sf_config_parser.append(new_configs):
+                print("Error adding Linode configurations to sf_config.yaml file.")
+                return False
+            return True
+    

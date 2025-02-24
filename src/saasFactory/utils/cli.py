@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
 from saasFactory.utils.globals import CONFIG_FILE_NAME
+from dotenv import load_dotenv, set_key
 
 
 def createProjectDir(projectName: str) -> str|None:
@@ -93,7 +94,7 @@ def findProjectRoot() -> str|None:
 
 def addEnvVar(env_var: str, value: str) -> bool:
     """
-    Adds an environment variable to the .env file in the project directory.
+    Adds an environment variable to the .env file in the project directory. Resolves conflicts if the variable already exists.
 
     Args:
         env_var (str): The name of the environment variable.
@@ -109,11 +110,11 @@ def addEnvVar(env_var: str, value: str) -> bool:
 
     env_file_path = os.path.join(project_root, ".env")
     try:
+        load_dotenv(env_file_path)
         # Check if the environment variable already exists
         with open(env_file_path, "r") as env_file:
             lines = env_file.readlines()
         
-        with open(env_file_path, "w") as env_file:
             for line in lines:
                 if line.startswith(f"{env_var.upper()}="):
                     print(f"Environment variable '{env_var.upper()}' already exists in .env file.")
@@ -121,27 +122,25 @@ def addEnvVar(env_var: str, value: str) -> bool:
                     print(f"2. Replace with new value: {env_var.upper()}={value}")
                     choice = input("Choose an option (1 or 2): ").strip()
                     if choice == '1':
-                        env_file.write(line)
+                        print("Keeping existing environment variable...")
                         return True
                     elif choice == '2':
-                        continue
+                        print("Replacing existing environment variable...")
+                        break
                     else:
                         print("Invalid choice. Please enter 1 or 2.")
                         return False
-                else:
-                    env_file.write(line)
-            
-            # Add the environment variable if it does not exist or was replaced
-            env_file.write(f"{env_var.upper()}={value}\n")
-        
-        print(f"Added environment variable '{env_var.upper()}' to .env file.")
-        return True
+           
+            set_key(dotenv_path=env_file_path, key_to_set=env_var.upper(), value_to_set=value, quote_mode="never")            
+            print(f"Added environment variable '{env_var.upper()}' to .env file.")
+            return True
+
     except Exception as e:
         print(f"Error adding environment variable to .env file: {e}")
         return False
     
 
-def get_choice(options:list[str], use_table: bool = False, table_headers: list[str] = None) -> int:
+def get_user_choice(options:list[str], use_table: bool = False, table_headers: list[str] = None) -> int:
     """
     Display a menu of options and return the user's choice.
 
@@ -191,3 +190,23 @@ def yes_no_prompt(prompt: str, additional_text:Optional[str] = None) -> bool:
             return False
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
+
+
+def mb_to_gb(mb: int) -> int:
+    """
+    Convert megabytes to gigabytes.
+    Args:
+        mb (int): The value in megabytes.
+    Returns:
+        int: The value converted to gigabytes.
+    """
+    return mb // 1024
+
+def get_api_token_cli(provider: str) -> str:
+    """
+    Get the Linode API token from user input.
+    Returns:
+        str: The Linode API token entered by the user.
+    """
+    api_token = input(f"Enter your {provider} API token: ")
+    return api_token

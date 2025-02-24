@@ -1,10 +1,15 @@
 import argparse
 import os
-from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, yes_no_prompt
-from saasFactory.vps.utils import get_linode_api_token, testLinodeKey, addLinodeConfigs
-from saasFactory.utils.globals import LINODE_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT
+from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli
+#from saasFactory.vps.utils import get_linode_api_token, testLinodeKey, addLinodeConfigs
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, PROJECT_DIR_NAME_SUFFIX
+from saasFactory.vps.provider import LinodeProvider
+from saasFactory.utils.cli import yes_no_prompt
 
 
+"""
+EACH CLI Function has Error logging
+"""
 
 def main():
     parser = argparse.ArgumentParser(
@@ -37,7 +42,7 @@ def main():
 
 
     vps_create_parser = vps_subparsers.add_parser(
-        "create", help="Create a new VPS instance"
+        "synth", help="Sythesize a new VPS instance config"
     )
     vps_create_parser.add_argument(
         "--provider", type=str, help="Cloud provider for the VPS instance",
@@ -68,8 +73,8 @@ def main():
     if args.command == "init":
         handle_init(args)
     elif args.command == "vps":
-        if args.vps_command == "create":
-            handle_vps_create(args)
+        if args.vps_command == "synth":
+            handle_vps_synth(args)
     elif args.command == "delete":
         handle_delete(args)
 
@@ -77,7 +82,7 @@ def main():
 def handle_init(args):
     #gather args and create root project folder
     project_path_input = os.path.abspath(args.path)
-    project_name = args.name or os.path.basename(project_path_input)
+    project_name = args.name or f"{os.path.basename(project_path_input)}-{PROJECT_DIR_NAME_SUFFIX}"
     project_root_folder = createProjectDir(project_name)
 
     #call function that creates a .env file and sf_config.yaml in the root project folder
@@ -85,33 +90,34 @@ def handle_init(args):
     createSFConfigFile(project_root_folder, project_name)
     
     
-def handle_vps_create(args):
+def handle_vps_synth(args):
     if findProjectRoot() is None:
         print("No project found. Please run this command from the project root.")
         return
+    
     if (args.provider == "linode" or args.provider == "Linode"):
         # get API token either from command args or from user input and add to .env
-        linode_api_token = args.api_token if args.api_token is not None else get_linode_api_token()
+        linode_api_token = args.api_token if args.api_token is not None else get_api_token_cli(provider="Linode")
         # add the Linode API token to the .env file
-        if(not addEnvVar(LINODE_API_TOKEN_ENV_VAR, linode_api_token)):
-            print("Error adding Linode API token to .env file.")
+        if(not addEnvVar(VPS_API_TOKEN_ENV_VAR, linode_api_token)):
             return
-        # test the Linode API token is valid
-        if(not testLinodeKey(LINODE_API_TOKEN_ENV_VAR, findProjectRoot())):
-            print("Error validating Linode API token.")
-            return
+        # create Linode VPS Provider Instance
+        linVPS = LinodeProvider(linode_api_token)
+        # test the Linode API token 
+        if(not linVPS.test_token_client()):
+            return 
         # use default configurations for VPS instance
         defaults_choice = yes_no_prompt(
             "Would you like to use default configurations for the VPS instance?",
             additional_text=DEFAULT_LINODE_VPS_CONFIG_TEXT)
         if defaults_choice:
             print("Using default configurations for the VPS instance.")
-            if(not addLinodeConfigs(LINODE_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG)):
-                print("VPS Configuration Failure.")
+            if(not linVPS.configure_instance(DEFAULT_LINODE_VPS_CONFIG)):
+                print(">>>> VPS Configuration Failure.")
                 return
         else:
             print("Collecting configuration parameters for the VPS instance.")
-            if(not addLinodeConfigs(LINODE_API_TOKEN_ENV_VAR)):
+            if(not linVPS.configure_instance()):
                 print("VPS Configuration Failure.")
                 return
             # collect the configuration parameters for the VPS instance

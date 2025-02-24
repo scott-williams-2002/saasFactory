@@ -3,15 +3,15 @@ from dotenv import load_dotenv
 import os
 from linode_api4.objects import Image, Type
 from linode_api4.paginated_list import PaginatedList
-from saasFactory.utils.cli import CONFIG_FILE_NAME, findProjectRoot, get_choice
+from saasFactory.utils.cli import findProjectRoot, get_choice
 from saasFactory.helpers.yamlParse import YAMLParser
 from typing import Optional
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
+from saasFactory.utils.globals import SSH_KEY_DIR_NAME, CONFIG_FILE_NAME
 
 
-SSH_KEY_DIR_NAME = "ssh_keys"
 
 def get_linode_api_token() -> str:
     """
