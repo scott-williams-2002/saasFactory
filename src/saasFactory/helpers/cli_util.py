@@ -1,4 +1,5 @@
 import os
+import yaml
 from typing import Any, Dict, List, Tuple
 from datetime import datetime
 
@@ -65,8 +66,11 @@ def createSFConfigFile(project_path: str, project_name: str) -> None:
         else:
             config_file_path = os.path.join(project_path, CONFIG_FILE_NAME)
             with open(config_file_path, "w") as config_file:
-                config_file.write(f"project_name: {project_name}\n")
-                config_file.write(f"created_at: {datetime.datetime.now()}\n")
+                config_base = {
+                    "project_name": project_name,
+                    "created_at": datetime.now()
+                }
+                yaml.dump(config_base, config_file)
             config_file.close()
             print(f"Created {CONFIG_FILE_NAME} file in: {config_file_path}")
     except Exception as e:
@@ -86,7 +90,7 @@ def findProjectRoot() -> str|None:
         return current_dir
     return None
 
-def addEnvVar(env_var: str, value: str) -> None:
+def addEnvVar(env_var: str, value: str) -> bool:
     """
     Adds an environment variable to the .env file in the project directory.
 
@@ -100,12 +104,39 @@ def addEnvVar(env_var: str, value: str) -> None:
     project_root = findProjectRoot()
     if project_root is None:
         print("No project found. Please run this command from the project root.")
-        return
+        return False
 
     env_file_path = os.path.join(project_root, ".env")
     try:
         with open(env_file_path, "a") as env_file:
             env_file.write(f"{env_var.upper()}={value}\n")
         print(f"Added environment variable '{env_var.upper()}' to .env file.")
+        return True
     except Exception as e:
         print(f"Error adding environment variable to .env file: {e}")
+        return False
+    
+
+def get_choice(options):
+    """
+    Display a menu of options and return the user's choice.
+
+    Args:
+        options (List[str]): A list of options to choose from.
+
+    Returns:
+        str: The selected option.
+    """
+    while True:
+        print("Choose an option:")
+        for i, option in enumerate(options):
+            print(f"[{i}] {option}")
+        
+        try:
+            choice = int(input("Enter the number for your choice: "))
+            if 0 <= choice < len(options):
+                return options[choice]
+            else:
+                print("Invalid number. Please select a valid option.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")

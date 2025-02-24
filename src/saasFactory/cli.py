@@ -1,8 +1,9 @@
 import argparse
 import os
 from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar
-from saasFactory.linode.utils import get_linode_api_token
+from saasFactory.linode.utils import get_linode_api_token, testLinodeKey
 
+LINODE_API_TOKEN_ENV_VAR = "LINODE_API_TOKEN"
 
 def main():
     parser = argparse.ArgumentParser(
@@ -87,8 +88,17 @@ def handle_vps_create(args):
     if (args.provider == "linode" or args.provider == "Linode"):
         # get API token from user input and add to .env
         linode_api_token = get_linode_api_token()
-        addEnvVar("LINODE_API_TOKEN", linode_api_token)
-        
+        # add the Linode API token to the .env file
+        if(not addEnvVar(LINODE_API_TOKEN_ENV_VAR, linode_api_token)):
+            print("Error adding Linode API token to .env file.")
+            return
+        # test the Linode API token is valid
+        if(not testLinodeKey(LINODE_API_TOKEN_ENV_VAR)):
+            print("Error validating Linode API token.")
+            return
+        # collect configuration for the VPS instance
+    
+
     else:
         print("Invalid provider. Please provide a valid provider.")
         return
