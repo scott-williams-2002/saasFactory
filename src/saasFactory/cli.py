@@ -1,9 +1,18 @@
 import argparse
 import os
-from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar
+from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, yes_no_prompt
 from saasFactory.linode.utils import get_linode_api_token, testLinodeKey
 
 LINODE_API_TOKEN_ENV_VAR = "LINODE_API_TOKEN"
+DEFAULT_LINODE_VPS_CONFIG = {
+    "region": "us-central",
+    "type": "g6-standard-1",
+    "image": "Ubuntu 24.04 LTS"
+}
+DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
+LINODE_VPS_CONFIG_INPUT_OPTIONS = ["region", "type", "image", "root_pass"]
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -47,6 +56,10 @@ def main():
         "--name", type=str, help="Name of the VPS instance",
         required=False
     )
+    vps_create_parser.add_argument(
+        "--api_token", type=str, help="VPS Provider API Token",
+        required=False
+    )
 
 
 
@@ -86,17 +99,28 @@ def handle_vps_create(args):
         print("No project found. Please run this command from the project root.")
         return
     if (args.provider == "linode" or args.provider == "Linode"):
-        # get API token from user input and add to .env
-        linode_api_token = get_linode_api_token()
+        # get API token either from command args or from user input and add to .env
+        linode_api_token = args.api_token if args.api_token is not None else get_linode_api_token()
         # add the Linode API token to the .env file
         if(not addEnvVar(LINODE_API_TOKEN_ENV_VAR, linode_api_token)):
             print("Error adding Linode API token to .env file.")
             return
         # test the Linode API token is valid
-        if(not testLinodeKey(LINODE_API_TOKEN_ENV_VAR)):
+        if(not testLinodeKey(LINODE_API_TOKEN_ENV_VAR, findProjectRoot())):
             print("Error validating Linode API token.")
             return
-        # collect configuration for the VPS instance
+        # use default configurations for VPS instance
+        defaults_choice = yes_no_prompt(
+            "Would you like to use default configurations for the VPS instance?",
+            additional_text=DEFAULT_LINODE_VPS_CONFIG_TEXT)
+        if defaults_choice:
+            print("Using default configurations for the VPS instance.")
+        else:
+            print("Collecting configuration parameters for the VPS instance.")
+            # collect the configuration parameters for the VPS instance
+            #vps_instance_config = collectVPSInstanceConfig()
+            #print(f"VPS Instance Configuration: {vps_instance_config}")
+
     
 
     else:

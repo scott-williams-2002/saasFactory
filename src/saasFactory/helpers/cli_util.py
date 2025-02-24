@@ -1,6 +1,6 @@
 import os
 import yaml
-from typing import Any, Dict, List, Tuple
+from typing import Optional
 from datetime import datetime
 
 CONFIG_FILE_NAME = "sf_config.yaml"
@@ -43,7 +43,8 @@ def createEnvFile(project_path: str) -> None:
         else:
             env_file_path = os.path.join(project_path, ".env")
             with open(env_file_path, "w") as env_file:
-                env_file.write("# Add environment variables here") #come back to this, I want to pull from env.example later
+                pass
+            env_file.close()
             print(f"Created .env file in: {env_file_path}")
     except Exception as e:
         print(f"Error creating .env file: {e}")
@@ -99,7 +100,7 @@ def addEnvVar(env_var: str, value: str) -> bool:
         value (str): The value of the environment variable.
 
     Returns:
-        None
+        bool: True if the environment variable was added or is present, False otherwise.
     """
     project_root = findProjectRoot()
     if project_root is None:
@@ -108,6 +109,15 @@ def addEnvVar(env_var: str, value: str) -> bool:
 
     env_file_path = os.path.join(project_root, ".env")
     try:
+        # Check if the environment variable already exists
+        with open(env_file_path, "r") as env_file:
+            lines = env_file.readlines()
+            for line in lines:
+                if line.startswith(f"{env_var.upper()}="):
+                    print(f"Environment variable '{env_var.upper()}' already exists in .env file.")
+                    return True
+
+        # Add the environment variable if it does not exist
         with open(env_file_path, "a") as env_file:
             env_file.write(f"{env_var.upper()}={value}\n")
         print(f"Added environment variable '{env_var.upper()}' to .env file.")
@@ -140,3 +150,26 @@ def get_choice(options):
                 print("Invalid number. Please select a valid option.")
         except ValueError:
             print("Invalid input. Please enter a number.")
+
+
+def yes_no_prompt(prompt: str, additional_text:Optional[str] = None) -> bool:
+    """
+    Display a yes/no prompt and return the user's choice.
+
+    Args:
+        prompt (str): The prompt message.
+        additional_text (Optional[str]): Additional text to display with the prompt.
+
+    Returns:
+        bool: True if the user selects 'yes', False otherwise.
+    """
+    if additional_text:
+       print(additional_text)
+    while True:
+        response = input(f"{prompt} (y/n): ").lower()
+        if response == 'y':
+            return True
+        elif response == 'n':
+            return False
+        else:
+            print("Invalid input. Please enter 'y' or 'n'.")
