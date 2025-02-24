@@ -3,8 +3,7 @@ import yaml
 from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
-
-CONFIG_FILE_NAME = "sf_config.yaml"
+from saasFactory.utils.globals import CONFIG_FILE_NAME
 
 
 def createProjectDir(projectName: str) -> str|None:

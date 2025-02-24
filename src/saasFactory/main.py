@@ -1,16 +1,8 @@
 import argparse
 import os
-from saasFactory.helpers.cli_util import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, yes_no_prompt
+from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, yes_no_prompt
 from saasFactory.linode.utils import get_linode_api_token, testLinodeKey, addLinodeConfigs
-
-LINODE_API_TOKEN_ENV_VAR = "LINODE_API_TOKEN"
-DEFAULT_LINODE_VPS_CONFIG = {
-    "image": "linode/ubuntu24.04",
-    "region": "us-central",
-    "type": "g6-standard-1"
-}
-DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
-LINODE_VPS_CONFIG_INPUT_OPTIONS = ["region", "type", "image", "root_pass"]
+from saasFactory.utils.globals import LINODE_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT
 
 
 

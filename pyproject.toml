@@ -33,7 +33,7 @@ Homepage = "https://github.com/scott-williams-2002/saasFactory"
 Repository = "https://github.com/scott-williams-2002/saasFactory"
 
 [project.scripts]
-sfy = "saasFactory.cli:main"
+sfy = "saasFactory.main:main"
 
 
 [tool.setuptools]

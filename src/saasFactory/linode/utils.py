@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from linode_api4.objects import Image, Type
 from linode_api4.paginated_list import PaginatedList
-from saasFactory.helpers.cli_util import CONFIG_FILE_NAME, findProjectRoot, get_choice
+from saasFactory.utils.cli import CONFIG_FILE_NAME, findProjectRoot, get_choice
 from saasFactory.helpers.yamlParse import YAMLParser
 from typing import Optional
 from cryptography.hazmat.primitives import serialization
@@ -242,7 +242,7 @@ def addLinodeConfigs(token_env_var: str, configsDict: Optional[dict] = None) -> 
             "vps_configs": {
                 "image": images[image_choice_index].id,
                 "region": regions[region_choice_index],
-                "type": types[type_choice_index]
+                "type": types[type_choice_index].id
                 
             }
         }
