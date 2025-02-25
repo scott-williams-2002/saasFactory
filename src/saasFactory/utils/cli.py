@@ -71,7 +71,8 @@ def createSFConfigFile(project_path: str, project_name: str) -> None:
                 pass
             config_file.close()
         yaml_file = YAMLParser(config_file_path)
-        yaml_file.append({"project_name": project_name, "created_at": datetime.now()})
+        yaml_file.append({"project_name": project_name})
+        yaml_file.append({"created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
         print(f"Created {CONFIG_FILE_NAME} file in: {config_file_path}")
     except Exception as e:
         print(f"Error creating {CONFIG_FILE_NAME} file: {e}")
