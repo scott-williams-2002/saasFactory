@@ -1,4 +1,5 @@
 from typing import Optional
+from dotenv import load_dotenv
 from linode_api4 import LinodeClient
 from linode_api4.objects import Image
 from linode_api4.paginated_list import PaginatedList
@@ -7,7 +8,20 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from saasFactory.utils.yaml import YAMLParser
-from saasFactory.utils.globals import SSH_KEY_DIR_NAME, VPS_ROOT_PASSWORD_ENV_VAR, CONFIG_FILE_NAME, VPS_CONFIGS_KEY
+from saasFactory.utils.globals import (
+SSH_KEY_DIR_NAME,
+VPS_ROOT_PASSWORD_ENV_VAR, 
+CONFIG_FILE_NAME, 
+VPS_CONFIGS_KEY, 
+SSH_KEY_FILE_NAME,
+LINODE_IMAGE_KEY,
+LINODE_REGION_KEY,
+LINODE_TYPE_KEY,
+VPS_PROVIDER_KEY,
+LINODE_LABEL_KEY,
+VPS_PROJECT_NAME_KEY,
+LINODE_INSTANCE_PREFIX
+)
 from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb
 
 #abstract VPS class
@@ -200,8 +214,11 @@ class LinodeProvider(VPSProvider):
         sf_config_parser = YAMLParser(config_file_path)
     
         if configsDict is not None:
+            #add LINODE_INSTANCE_PREFIX to the label
+            project_name_config = sf_config_parser.get(VPS_PROJECT_NAME_KEY) if isinstance(sf_config_parser.get(VPS_PROJECT_NAME_KEY), str) else sf_config_parser.get(VPS_PROJECT_NAME_KEY)[VPS_PROJECT_NAME_KEY]
+            configsDict[LINODE_LABEL_KEY] = LINODE_INSTANCE_PREFIX + project_name_config
             default_configs = {
-                "provider": "linode",
+                VPS_PROVIDER_KEY: "linode",
                 VPS_CONFIGS_KEY: configsDict
             }
             if not sf_config_parser.append(default_configs):
@@ -227,14 +244,16 @@ class LinodeProvider(VPSProvider):
             print(f"Image: {images[image_choice_index].id}")
             print(f"Region: {regions[region_choice_index]}")
             print(f"Type: {types[type_choice_index]}")
+
+            project_name_config = sf_config_parser.get(VPS_PROJECT_NAME_KEY) if isinstance(sf_config_parser.get(VPS_PROJECT_NAME_KEY), str) else sf_config_parser.get(VPS_PROJECT_NAME_KEY)[VPS_PROJECT_NAME_KEY]
             
             new_configs = {
-                "provider": "linode",
+                VPS_PROVIDER_KEY: "linode",
                 VPS_CONFIGS_KEY: {
-                    "image": images[image_choice_index].id,
-                    "region": regions[region_choice_index],
-                    "type": types[type_choice_index].id
-                    
+                    LINODE_IMAGE_KEY: images[image_choice_index].id,
+                    LINODE_REGION_KEY: regions[region_choice_index],
+                    LINODE_TYPE_KEY: types[type_choice_index].id,
+                    LINODE_LABEL_KEY: LINODE_INSTANCE_PREFIX + project_name_config
                 }
             }
             if not sf_config_parser.append(new_configs):
@@ -257,6 +276,31 @@ class LinodeProvider(VPSProvider):
 
         linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY) #change to optional key for read
         print(f"Linode Configurations: {linode_configs}")
+        if linode_configs is None:
+            print("No Linode configurations found.")
+            return
+        
+        image = linode_configs.get(LINODE_IMAGE_KEY)
+        region = linode_configs.get(LINODE_REGION_KEY)   
+        instance_type = linode_configs.get(LINODE_TYPE_KEY)
+        instance_label = linode_configs.get(LINODE_LABEL_KEY)
+
+        if image is None or region is None or instance_type is None or instance_label is None:
+            print("Error reading Linode configurations.")
+            return
+
+        # get root password from .env file
+        load_dotenv(os.path.join(project_root, ".env"))
+        root_pass = os.getenv(VPS_ROOT_PASSWORD_ENV_VAR)
+        if root_pass is None:
+            print(f"{VPS_ROOT_PASSWORD_ENV_VAR} not found in .env file. Please make sure it is set.")
+            return
+        
+        ssh_public_key = self.generate_ssh_key_pair(SSH_KEY_FILE_NAME, root_pass)
+        if ssh_public_key is None:
+            print("Error generating SSH key pair.")
+            return
+
 
         #new_linode = self.client.linode.instance_create(
         #    ltype=instance_type,
@@ -267,3 +311,4 @@ class LinodeProvider(VPSProvider):
         #    authorized_keys=[ssh_key]
         #)
     
+    #Please run 'sfy vps configure' to configure the VPS.

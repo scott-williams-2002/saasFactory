@@ -24,7 +24,7 @@ class YAMLParser:
         except FileNotFoundError:
             return None
         
-    def get(self, key: str) -> str|None:
+    def get(self, key: str) -> dict|str|None:
         """
         Get the value of a specific key from the YAML file.
 

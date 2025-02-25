@@ -49,10 +49,6 @@ def main():
         required=True
     )
     vps_synth_parser.add_argument(
-        "--name", type=str, help="Name of the VPS instance",
-        required=False
-    )
-    vps_synth_parser.add_argument(
         "--api_token", type=str, help="VPS Provider API Token",
         required=False
     )
@@ -89,8 +85,8 @@ def main():
 def handle_init(args):
     #gather args and create root project folder
     project_path_input = os.path.abspath(args.path)
-    project_name = args.name or f"{os.path.basename(project_path_input)}-{PROJECT_DIR_NAME_SUFFIX}"
-    project_root_folder = createProjectDir(project_name)
+    project_name = args.name or os.path.basename(project_path_input)
+    project_root_folder = createProjectDir(f"{os.path.basename(project_path_input)}{PROJECT_DIR_NAME_SUFFIX}")
 
     #call function that creates a .env file and sf_config.yaml in the root project folder
     createEnvFile(project_root_folder)
@@ -127,20 +123,12 @@ def handle_vps_synth(args):
             if(not linVPS.configure_instance()):
                 print("VPS Configuration Failure.")
                 return
-            # collect the configuration parameters for the VPS instance
-            #vps_instance_config = collectVPSInstanceConfig()
-            #print(f"VPS Instance Configuration: {vps_instance_config}")
-
-    
 
     else:
         print("Invalid provider. Please provide a valid provider.")
         return
     
     print(f"Creating VPS instance with provider: {args.provider}")
-    if args.name:
-        print(f"Name of the VPS instance: {args.name}")
-
 
 def handle_vps_up(args):
     if findProjectRoot() is None:
