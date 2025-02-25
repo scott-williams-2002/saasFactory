@@ -1,7 +1,8 @@
 import argparse
 import os
+from dotenv import load_dotenv
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, PROJECT_DIR_NAME_SUFFIX
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, PROJECT_DIR_NAME_SUFFIX, CONFIG_FILE_NAME
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.utils.cli import yes_no_prompt
 
@@ -39,21 +40,26 @@ def main():
     )
     vps_subparsers = vps_parser.add_subparsers(dest="vps_command", required=True)
 
-
-    vps_create_parser = vps_subparsers.add_parser(
+    # `vpc synth` command argument parser
+    vps_synth_parser = vps_subparsers.add_parser(
         "synth", help="Sythesize a new VPS instance config"
     )
-    vps_create_parser.add_argument(
+    vps_synth_parser.add_argument(
         "--provider", type=str, help="Cloud provider for the VPS instance",
         required=True
     )
-    vps_create_parser.add_argument(
+    vps_synth_parser.add_argument(
         "--name", type=str, help="Name of the VPS instance",
         required=False
     )
-    vps_create_parser.add_argument(
+    vps_synth_parser.add_argument(
         "--api_token", type=str, help="VPS Provider API Token",
         required=False
+    )
+
+    # `vpc up` command argument parser
+    vps_up_parser = vps_subparsers.add_parser(
+        "up", help="Start the VPS instance"
     )
 
 
@@ -74,6 +80,8 @@ def main():
     elif args.command == "vps":
         if args.vps_command == "synth":
             handle_vps_synth(args)
+        elif args.vps_command == "up":
+            handle_vps_up(args)
     elif args.command == "delete":
         handle_delete(args)
 
@@ -132,6 +140,24 @@ def handle_vps_synth(args):
     print(f"Creating VPS instance with provider: {args.provider}")
     if args.name:
         print(f"Name of the VPS instance: {args.name}")
+
+
+def handle_vps_up(args):
+    if findProjectRoot() is None:
+        print("No project found. Please run this command from the project root.")
+        return
+    config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
+    if not os.path.exists(config_file):
+        print("Project configuration file not found.")
+        return
+    print("Config File Found. Starting the VPS instance.")
+
+    # create Linode VPS Provider Instance
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS.create_instance()
+
+
 
 def handle_delete(args):
     if args.force:

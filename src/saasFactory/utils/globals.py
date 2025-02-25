@@ -15,6 +15,7 @@ DEFAULT_LINODE_VPS_CONFIG = {
     "region": "us-central",
     "type": "g6-standard-1"
 }
+VPS_CONFIGS_KEY = "vps_configs"
 
 #Configurations Text Formatted:
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])

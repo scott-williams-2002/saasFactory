@@ -23,6 +23,19 @@ class YAMLParser:
                 return yaml.safe_load(file) or None
         except FileNotFoundError:
             return None
+        
+    def get(self, key: str) -> str|None:
+        """
+        Get the value of a specific key from the YAML file.
+
+        Args:
+            key (str): The key to retrieve the value for.
+
+        Returns:
+            any: The value corresponding to the key, or None if the key does not exist.
+        """
+        data = self.read()
+        return data.get(key) if data else None
 
     def append(self, data: dict) -> bool:
         """

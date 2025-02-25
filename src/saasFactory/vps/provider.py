@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from saasFactory.utils.yaml import YAMLParser
-from saasFactory.utils.globals import SSH_KEY_DIR_NAME, VPS_ROOT_PASSWORD_ENV_VAR, CONFIG_FILE_NAME
+from saasFactory.utils.globals import SSH_KEY_DIR_NAME, VPS_ROOT_PASSWORD_ENV_VAR, CONFIG_FILE_NAME, VPS_CONFIGS_KEY
 from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb
 
 #abstract VPS class
@@ -107,6 +107,12 @@ class VPSProvider:
         """
         raise NotImplementedError("Subclasses must implement this method.")
     
+    def create_instance(self):
+        """
+        Create a VPS instance with the configured parameters.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+    
 
 
 
@@ -196,7 +202,7 @@ class LinodeProvider(VPSProvider):
         if configsDict is not None:
             default_configs = {
                 "provider": "linode",
-                "vps_configs": configsDict
+                VPS_CONFIGS_KEY: configsDict
             }
             if not sf_config_parser.append(default_configs):
                 print("Error adding Linode configurations to sf_config.yaml file.")
@@ -224,7 +230,7 @@ class LinodeProvider(VPSProvider):
             
             new_configs = {
                 "provider": "linode",
-                "vps_configs": {
+                VPS_CONFIGS_KEY: {
                     "image": images[image_choice_index].id,
                     "region": regions[region_choice_index],
                     "type": types[type_choice_index].id
@@ -235,4 +241,29 @@ class LinodeProvider(VPSProvider):
                 print("Error adding Linode configurations to sf_config.yaml file.")
                 return False
             return True
+        
+    def create_instance(self) -> None:
+        """
+        Create a Linode VPS instance with the configured parameters pulled from the CONFIG_FILE_NAME file."""
+        project_root = findProjectRoot()
+        if project_root is None:
+            print("No project found. Please run this command from the project root.")
+            return
+        #ensure token is still valid
+        self.test_token_client()
+
+        config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
+        sf_config_parser = YAMLParser(config_file_path)
+
+        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY) #change to optional key for read
+        print(f"Linode Configurations: {linode_configs}")
+
+        #new_linode = self.client.linode.instance_create(
+        #    ltype=instance_type,
+        #    region=region,
+        #    image=image,
+        #    label=label,
+        #    root_pass=root_pass,
+        #    authorized_keys=[ssh_key]
+        #)
     
