@@ -17,7 +17,8 @@ VPS_CONFIGS_KEY = "vps_configs"
 LINODE_IMAGE_KEY = "image"
 LINODE_REGION_KEY = "region"   
 LINODE_TYPE_KEY = "type"
-LINODE_LABEL_KEY = "label" 
+LINODE_LABEL_KEY = "label"
+LINODE_ID_KEY = "linode_id"
 
 #Configurations Raw:
 DEFAULT_LINODE_VPS_CONFIG = {

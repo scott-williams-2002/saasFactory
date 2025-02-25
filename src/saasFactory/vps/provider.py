@@ -1,9 +1,10 @@
 from typing import Optional
 from dotenv import load_dotenv
 from linode_api4 import LinodeClient
-from linode_api4.objects import Image
+from linode_api4.objects import Image, Instance
 from linode_api4.paginated_list import PaginatedList
 import os
+import shutil
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
@@ -20,9 +21,10 @@ LINODE_TYPE_KEY,
 VPS_PROVIDER_KEY,
 LINODE_LABEL_KEY,
 VPS_PROJECT_NAME_KEY,
-LINODE_INSTANCE_PREFIX
+LINODE_INSTANCE_PREFIX,
+LINODE_ID_KEY
 )
-from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb
+from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt
 
 #abstract VPS class
 class VPSProvider:
@@ -124,6 +126,12 @@ class VPSProvider:
     def create_instance(self):
         """
         Create a VPS instance with the configured parameters.
+        """
+        raise NotImplementedError("Subclasses must implement this method.")
+    
+    def destroy_instance(self):
+        """
+        Delete the VPS instance.
         """
         raise NotImplementedError("Subclasses must implement this method.")
     
@@ -312,5 +320,73 @@ class LinodeProvider(VPSProvider):
         )
         print(f"Linode instance created: {new_linode.label}")
         print(f"Linode IP Address: {new_linode.ipv4[0]}")
+        print(f"Linode ID: {new_linode.id}")
+        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
+        if isinstance(linode_configs, dict):
+            linode_configs[LINODE_ID_KEY] = new_linode.id
+            sf_config_parser.remove(VPS_CONFIGS_KEY)
+        if( not sf_config_parser.append({VPS_CONFIGS_KEY: linode_configs})):
+            print(f"Error adding Linode ID to {CONFIG_FILE_NAME} file.")
+            print(f"Please add the following config to the {CONFIG_FILE_NAME} file manually:")
+            print(f"    '{LINODE_ID_KEY}: {new_linode.id}'")
+            return
+
     
-    #Please run 'sfy vps configure' to configure the VPS.
+    def destroy_instance(self) -> None:
+        """
+        Delete the Linode VPS instance.
+        """
+        project_root = findProjectRoot()
+        if project_root is None:
+            print("No project found. Please run this command from the project root.")
+            return
+        #ensure token is still valid
+        self.test_token_client()
+
+        config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
+        sf_config_parser = YAMLParser(config_file_path)
+
+        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
+        if linode_configs is None:
+            print("No Linode configurations found.")
+            return 
+        
+
+        
+        instance_id = linode_configs.get(LINODE_ID_KEY)
+        if instance_id is None:
+            print("Error reading Linode configurations.")
+            return
+        
+        instance_to_delete = self.linode_client.linode.instances(Instance.id == instance_id) #object to call .delete() on
+        instance_to_delete_details = instance_to_delete[0]
+        if instance_to_delete is None:
+            print("No Linode instance found with the specified ID.")
+            return 
+        
+        delete = yes_no_prompt("Are you sure you want to permanently delete this instance?", additional_text=f"Instance Details ID: {instance_to_delete_details.id}, Label: {instance_to_delete_details.label}\n")
+        if delete:
+            try:
+                instance_to_delete[0].delete()
+                print(f"Linode instance {instance_to_delete_details.label} deleted.")
+                #removing ssh keys and instance ID
+                if os.path.exists(os.path.join(project_root, SSH_KEY_DIR_NAME)):
+                    print(f"Removing {SSH_KEY_DIR_NAME} folder and its contents.")
+                    shutil.rmtree(os.path.join(project_root, SSH_KEY_DIR_NAME))
+                    print(f"Removing {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file.")
+                    sf_config_parser.remove(LINODE_ID_KEY)
+                return
+            except Exception as e:
+                print(f"Error Deleting Linode Instance. Error: {e}")
+                return 
+        else:
+            print("Instance deletion cancelled.")
+            return
+    
+
+        #also remove the ssh keys folder and its contents
+        
+        #instance_id = 
+#
+        #for instance in my_linodes:
+        #    print(f"ID: {instance.id}, Label: {instance.label}")

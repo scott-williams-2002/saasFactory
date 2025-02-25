@@ -74,3 +74,24 @@ class YAMLParser:
             print(f"Error appending data to {os.path.basename(self.file_path)}: {e}")
             return False
             
+    def remove(self, key: str) -> bool:
+        """
+        Remove a section of the YAML file based on the key.
+
+        Args:
+            key (str): The key to remove from the YAML file.
+
+        Returns:
+            bool: True if the key was successfully removed, False otherwise.
+        """
+        try:
+            data = self.read()
+            if data and key in data:
+                del data[key]
+                with open(self.file_path, 'w') as file:
+                    yaml.safe_dump(data, file, default_flow_style=False)
+                return True
+            return False
+        except Exception as e:
+            print(f"Error removing key '{key}' from {os.path.basename(self.file_path)}: {e}")
+            return False

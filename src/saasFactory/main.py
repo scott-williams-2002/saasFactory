@@ -55,7 +55,12 @@ def main():
 
     # `vpc up` command argument parser
     vps_up_parser = vps_subparsers.add_parser(
-        "up", help="Start the VPS instance"
+        "up", help="Start Up the VPS instance"
+    )
+
+    # `vpc down` command argument parser
+    vps_down_parser = vps_subparsers.add_parser(
+        "down", help="Deactivate the VPS instance"
     )
 
 
@@ -78,6 +83,8 @@ def main():
             handle_vps_synth(args)
         elif args.vps_command == "up":
             handle_vps_up(args)
+        elif args.vps_command == "down":
+            handle_vps_down(args)
     elif args.command == "delete":
         handle_delete(args)
 
@@ -149,6 +156,20 @@ def handle_vps_up(args):
     linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
     linVPS.get_root_password()
     linVPS.create_instance()
+
+
+def handle_vps_down(args):
+    if findProjectRoot() is None:
+        print("No project found. Please run this command from the project root.")
+        return
+    config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
+    if not os.path.exists(config_file):
+        print("Project configuration file not found.")
+        return
+    print("Config File Found. Destroying the VPS instance.")
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS.destroy_instance()
 
 
 
