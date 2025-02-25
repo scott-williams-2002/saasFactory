@@ -85,7 +85,7 @@ class VPSProvider:
         return public_key.decode('utf-8')
     
     
-    def get_root_password(self, min_lenght: int = 8) -> None:
+    def get_root_password(self, min_length: int = 8) -> None:
         """
         Prompts user to enter a VPS root password. Validates and writes password to .env file.
 
@@ -95,8 +95,8 @@ class VPSProvider:
         """
         while True:
             password_input_1 = input("Enter the root password for the VPS: ")
-            if len(password) < min_lenght:
-                print(f"Password must be at least {min_lenght} characters long.")
+            if len(password_input_1) < min_length:
+                print(f"Password must be at least {min_length} characters long.")
             password_input_2 = input("Confirm the root password: ")
             if password_input_1 != password_input_2:
                 print("Passwords do not match. Please try again.")
@@ -296,19 +296,21 @@ class LinodeProvider(VPSProvider):
             print(f"{VPS_ROOT_PASSWORD_ENV_VAR} not found in .env file. Please make sure it is set.")
             return
         
-        ssh_public_key = self.generate_ssh_key_pair(SSH_KEY_FILE_NAME, root_pass)
+        ssh_public_key = self.generate_ssh_key_pair(SSH_KEY_FILE_NAME)#, root_pass)
         if ssh_public_key is None:
             print("Error generating SSH key pair.")
             return
 
 
-        #new_linode = self.client.linode.instance_create(
-        #    ltype=instance_type,
-        #    region=region,
-        #    image=image,
-        #    label=label,
-        #    root_pass=root_pass,
-        #    authorized_keys=[ssh_key]
-        #)
+        new_linode = self.linode_client.linode.instance_create(
+            ltype=instance_type,
+            region=region,
+            image=image,
+            label=instance_label,
+            root_pass=root_pass,
+            authorized_keys=[ssh_public_key]
+        )
+        print(f"Linode instance created: {new_linode.label}")
+        print(f"Linode IP Address: {new_linode.ipv4[0]}")
     
     #Please run 'sfy vps configure' to configure the VPS.

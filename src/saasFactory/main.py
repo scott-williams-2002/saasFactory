@@ -85,8 +85,12 @@ def main():
 def handle_init(args):
     #gather args and create root project folder
     project_path_input = os.path.abspath(args.path)
-    project_name = args.name or os.path.basename(project_path_input)
-    project_root_folder = createProjectDir(f"{os.path.basename(project_path_input)}{PROJECT_DIR_NAME_SUFFIX}")
+    if(args.name):
+        project_name = args.name
+        project_root_folder = createProjectDir(f"{project_name}{PROJECT_DIR_NAME_SUFFIX}")
+    else:
+        project_name = os.path.basename(project_path_input)
+        project_root_folder = createProjectDir(f"{os.path.basename(project_path_input)}{PROJECT_DIR_NAME_SUFFIX}")
 
     #call function that creates a .env file and sf_config.yaml in the root project folder
     createEnvFile(project_root_folder)
@@ -143,6 +147,7 @@ def handle_vps_up(args):
     # create Linode VPS Provider Instance
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
     linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS.get_root_password()
     linVPS.create_instance()
 
 
