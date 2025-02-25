@@ -1,7 +1,6 @@
 import argparse
 import os
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli
-#from saasFactory.vps.utils import get_linode_api_token, testLinodeKey, addLinodeConfigs
 from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, PROJECT_DIR_NAME_SUFFIX
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.utils.cli import yes_no_prompt

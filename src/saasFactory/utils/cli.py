@@ -1,9 +1,9 @@
 import os
-import yaml
 from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
 from saasFactory.utils.globals import CONFIG_FILE_NAME
+from saasFactory.utils.yaml import YAMLParser
 from dotenv import load_dotenv, set_key
 
 
@@ -63,18 +63,16 @@ def createSFConfigFile(project_path: str, project_name: str) -> None:
         None
     """
     try:
-        if os.path.exists(os.path.join(project_path, CONFIG_FILE_NAME)):
+        config_file_path = os.path.join(project_path, CONFIG_FILE_NAME)
+        if os.path.exists(config_file_path):
             print("Project already initialized.")
         else:
-            config_file_path = os.path.join(project_path, CONFIG_FILE_NAME)
             with open(config_file_path, "w") as config_file:
-                config_base = {
-                    "project_name": project_name,
-                    "created_at": datetime.now()
-                }
-                yaml.dump(config_base, config_file)
+                pass
             config_file.close()
-            print(f"Created {CONFIG_FILE_NAME} file in: {config_file_path}")
+        yaml_file = YAMLParser(config_file_path)
+        yaml_file.append({"project_name": project_name, "created_at": datetime.now()})
+        print(f"Created {CONFIG_FILE_NAME} file in: {config_file_path}")
     except Exception as e:
         print(f"Error creating {CONFIG_FILE_NAME} file: {e}")
 

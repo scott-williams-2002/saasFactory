@@ -6,7 +6,7 @@ import os
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
-from saasFactory.helpers.yamlParse import YAMLParser
+from saasFactory.utils.yaml import YAMLParser
 from saasFactory.utils.globals import SSH_KEY_DIR_NAME, VPS_ROOT_PASSWORD_ENV_VAR, CONFIG_FILE_NAME
 from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb
 
@@ -94,7 +94,7 @@ class VPSProvider:
         if not addEnvVar(VPS_ROOT_PASSWORD_ENV_VAR, password):
             print("Error adding root password to .env file.")
     
-    
+
     def test_token_client(self):
         """
         Test the Linode API token by creating a VPS client and printing some user info.
