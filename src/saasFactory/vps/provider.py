@@ -368,13 +368,14 @@ class LinodeProvider(VPSProvider):
         if delete:
             try:
                 instance_to_delete[0].delete()
-                print(f"Linode instance {instance_to_delete_details.label} deleted.")
+                #print(f"Linode instance {instance_to_delete_details.label} deleted.")
+                print("Linode instance deleted.")
                 #removing ssh keys and instance ID
                 if os.path.exists(os.path.join(project_root, SSH_KEY_DIR_NAME)):
                     print(f"Removing {SSH_KEY_DIR_NAME} folder and its contents.")
                     shutil.rmtree(os.path.join(project_root, SSH_KEY_DIR_NAME))
                     print(f"Removing {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file.")
-                    sf_config_parser.remove(LINODE_ID_KEY)
+                    sf_config_parser.remove(LINODE_ID_KEY) # this didn't work
                 return
             except Exception as e:
                 print(f"Error Deleting Linode Instance. Error: {e}")
