@@ -322,7 +322,7 @@ class LinodeProvider(VPSProvider):
             root_pass=root_pass,
             authorized_keys=[ssh_public_key]
         )
-        print(f"{Emojis.STAR.value} Linode instance successfully created.")
+        print(f"{Emojis.STAR.value} Linode instance successfully created. Please wait a frew minutes for the intance to boot.")
         instance_details = [[LINODE_LABEL_KEY, new_linode.label], [LINODE_PUBLIC_IP_KEY, new_linode.ipv4[0]], [LINODE_ID_KEY, new_linode.id]]
         print(tabulate(instance_details, headers=["", "Details"], tablefmt="fancy_grid"))
         linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
@@ -392,4 +392,22 @@ class LinodeProvider(VPSProvider):
         else:
             print(f"{Emojis.BOMB.value} Instance deletion aborted.")
             return
+        
+    def check_instance_status(self) -> None:
+        """
+        Check the status of the Linode VPS instance.
+        """
+        project_root = findProjectRoot()
+        if project_root is None:
+            root_dir_error_msg()
+            return
+        self.test_token_client()
+
+        config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
+        sf_config_parser = YAMLParser(config_file_path)
+        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
+        instance_id = linode_configs.get(LINODE_ID_KEY)
+        instance = self.linode_client.linode.instances(Instance.id == instance_id)[0]
+        print(instance.status)
+
     

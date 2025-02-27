@@ -30,9 +30,11 @@ def main():
     )
 #---------------------------------------------------------------------------------------------------------
     # `vps` command 
-        # can do sfy vps create -> vps_create_parser
-        # cad do sfy vps up -> vps_up_parser (need to be inside root project folder)      # can do sfy vps down -> vps_down_parser
-        # can do sfy vps list -> vps_list_parser
+        # can do sfy vps synth -> vps_create_parser
+        # cad do sfy vps up -> vps_up_parser (need to be inside root project folder)     
+        # can do sfy vps down -> vps_down_parser
+        # can do sfy vps status -> 
+
 
     vps_parser = subparsers.add_parser(
         "vps", help="Create a VPS instance for the project"
@@ -62,6 +64,22 @@ def main():
         "down", help="Deactivate the VPS instance"
     )
 
+    # `vpc status` command argument parser
+    vps_status_parser = vps_subparsers.add_parser(
+        "status", help="Check the status of the VPS instance"
+    )
+#---------------------------------------------------------------------------------------------------------
+    # coolify commands
+    coolify_parser = subparsers.add_parser(
+        "coolify", help="Coolify commands"
+    )
+    coolify_subparser = coolify_parser.add_subparsers(dest="coolify_command", required=True)
+
+    coolify_install_parser = coolify_subparser.add_parser(
+        "install", help="Install coolify on a VPS"
+    )
+
+
 
 
     # `delete` command
@@ -84,6 +102,11 @@ def main():
             handle_vps_up(args)
         elif args.vps_command == "down":
             handle_vps_down(args)
+        elif args.vps_command == "status":
+            handle_vps_status(args)
+    elif args.command == "coolify":
+        if args.coolify_command == "install":
+            handle_coolify_install(args)
     elif args.command == "delete":
         handle_delete(args)
 
@@ -173,6 +196,23 @@ def handle_vps_down(args):
     linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
     linVPS.destroy_instance()
 
+
+def handle_vps_status(args):
+    if findProjectRoot() is None:
+        root_dir_error_msg()
+        return
+    config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
+    if not os.path.exists(config_file):
+        print("Project configuration file not found.")
+        return
+    print("Config File Found. Checking the VPS instance status.")
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS.check_instance_status()
+
+def handle_coolify_install(args):
+    pass 
+    # prompt user to run manual commands to sign into coolify ...
 
 
 def handle_delete(args):
