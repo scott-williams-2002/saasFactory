@@ -2,9 +2,19 @@ import os
 from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
-from saasFactory.utils.globals import CONFIG_FILE_NAME
+from saasFactory.utils.globals import CONFIG_FILE_NAME, Emojis
 from saasFactory.utils.yaml import YAMLParser
 from dotenv import load_dotenv, set_key
+from pyfiglet import figlet_format
+
+
+def printWelcomeMessage() -> None:
+    ascii_logo = figlet_format("saasFactory", width=140) 
+    ascii_name = figlet_format("Scott Williams", font="digital")
+    print(ascii_logo)
+    print(f"Created by:\n{ascii_name}")
+
+    
 
 
 def createProjectDir(projectName: str) -> str|None:

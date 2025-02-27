@@ -1,4 +1,7 @@
 #Files Names:
+from enum import Enum
+
+
 PROJECT_DIR_NAME_SUFFIX = "_sfy_project" # if user doesn't specify a project name this gets added to the current directory name
 CONFIG_FILE_NAME = "sf_config.yaml"
 SSH_KEY_FILE_NAME = "sfy_key"
@@ -32,3 +35,19 @@ DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + 
 
 #Resources Name Prefixes:
 LINODE_INSTANCE_PREFIX = "sfy-instance-"
+
+#Emojis:
+class Emojis(Enum):
+    """Emojis used in the CLI. Use them like `Emoji.CHECK_MARK.value`."""
+    CHECK_MARK = "✅"
+    WARNING_SIGN = "⚠️"
+    ERROR_SIGN = "❌"
+    STOP_SIGN = "🛑"
+    NO_ENTRY_SIGN = "🚫"
+    THUMBS_UP = "👍"
+    PARTY_FACE = "🥳"
+    STAR = "✨"
+    LIGHTBULB = "💡"
+    BOMB = "💣"
+    DYNAMITE = "🧨"
+    ROCKET = "🚀"
