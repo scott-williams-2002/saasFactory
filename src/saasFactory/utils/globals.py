@@ -56,3 +56,5 @@ class Emojis(Enum):
     ROCKET = "🚀"
     SOON = "🔜"
     LOADING = "🔄️"
+    DOLLAR = "💲"
+    EXCLAMATION = "❗"

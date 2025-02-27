@@ -419,20 +419,25 @@ class LinodeProvider(VPSProvider):
         try:
             instance = self.linode_client.linode.instances(Instance.id == instance_id)[0]
             instance_status = instance.status
+            instance_status = instance_status.lower().strip()
             if log_status:
+                #running offline booting busy rebooting shutting_down provisioning deleting migrating rebuilding cloning restoring stopped billing_suspension
                 if instance_status == "running":
                     print(f"{Emojis.LIGHTBULB.value} Linode instance is running.")
                 elif instance_status == "booting" or instance_status == "rebooting":
                     print(f"{Emojis.LOADING.value} Linode instance is {instance_status}.")
                 elif instance_status == "provisioning":
                     print(f"{Emojis.SOON.value} Linode instance is {instance_status}.")
-                elif instance_status is None or instance_status == "offline":
+                elif instance_status is None:
                     print(f"{Emojis.STOP_SIGN.value} Linode instance is either non-existent or has been deleted.")
-                    return None
+                    return "offline"
+                else:
+                    print(f"{Emojis.EXCLAMATION.value} Linode instance is {instance_status}.")
+                
             return instance_status  
         except Exception as e:
-            print(f"{Emojis.ERROR_SIGN.value} Error getting Linode instance status. Error: {e}")
-            return None
+            print(f"{Emojis.ERROR_SIGN.value} Error getting Linode instance status. Error: {e}. Instance may be offline.")
+            return "offline"
         
 
            
