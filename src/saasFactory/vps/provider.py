@@ -1,5 +1,6 @@
 from typing import Optional
 from dotenv import load_dotenv
+from getpass import getpass
 from linode_api4 import LinodeClient
 from linode_api4.objects import Image, Instance
 from linode_api4.paginated_list import PaginatedList
@@ -99,10 +100,10 @@ class VPSProvider:
 
         """
         while True:
-            password_input_1 = input("Enter the root password for the VPS: ")
+            password_input_1 = getpass("Enter the root password for the VPS: ")
             if len(password_input_1) < min_length:
                 print(f"Password must be at least {min_length} characters long.")
-            password_input_2 = input("Confirm the root password: ")
+            password_input_2 = getpass("Confirm the root password: ")
             if password_input_1 != password_input_2:
                 print("Passwords do not match. Please try again.")
             else:
