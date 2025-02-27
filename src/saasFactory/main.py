@@ -1,8 +1,8 @@
 import argparse
 import os
 from dotenv import load_dotenv
-from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE
+from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, Emojis
 from saasFactory.vps.provider import LinodeProvider
 
 
@@ -109,7 +109,7 @@ def handle_init(args):
     
 def handle_vps_synth(args):
     if findProjectRoot() is None:
-        print("No project found. Please run this command from the project root.")
+        root_dir_error_msg()
         return
     
     if (args.provider == "linode" or args.provider == "Linode"):
@@ -130,29 +130,28 @@ def handle_vps_synth(args):
         if defaults_choice:
             print("Using default configurations for the VPS instance.")
             if(not linVPS.configure_instance(DEFAULT_LINODE_VPS_CONFIG)):
-                print(">>>> VPS Configuration Failure.")
+                print(f"{Emojis.STAR.value} VPS Configuration Failure.")
                 return
         else:
             print("Collecting configuration parameters for the VPS instance.")
             if(not linVPS.configure_instance()):
                 print("VPS Configuration Failure.")
                 return
-
     else:
-        print("Invalid provider. Please provide a valid provider.")
+        print(f"{Emojis.ERROR_SIGN.value} Invalid provider. Please provide a valid provider.")
         return
     
-    print(f"Creating VPS instance with provider: {args.provider}")
+    print(f"\n{Emojis.STAR.value} {args.provider} VPS instance configured successfully!\n")
 
 def handle_vps_up(args):
     if findProjectRoot() is None:
-        print("No project found. Please run this command from the project root.")
+        root_dir_error_msg()
         return
     config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
     if not os.path.exists(config_file):
-        print("Project configuration file not found.")
+        print(f"{Emojis.NO_ENTRY_SIGN.value} Project configuration file not found.")
         return
-    print("Config File Found. Starting the VPS instance.")
+    print(f"{Emojis.CHECK_MARK.value} Config File Found. Spinning up the VPS instance {Emojis.ROCKET.value}{Emojis.ROCKET.value}{Emojis.ROCKET.value}.")
 
     # create Linode VPS Provider Instance
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
@@ -163,7 +162,7 @@ def handle_vps_up(args):
 
 def handle_vps_down(args):
     if findProjectRoot() is None:
-        print("No project found. Please run this command from the project root.")
+        root_dir_error_msg()
         return
     config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
     if not os.path.exists(config_file):

@@ -125,7 +125,7 @@ def addEnvVar(env_var: str, value: str) -> bool:
     """
     project_root = findProjectRoot()
     if project_root is None:
-        print("No project found. Please run this command from the project root.")
+        root_dir_error_msg()
         return False
 
     env_file_path = os.path.join(project_root, ".env")
@@ -137,22 +137,26 @@ def addEnvVar(env_var: str, value: str) -> bool:
         
             for line in lines:
                 if line.startswith(f"{env_var.upper()}="):
-                    print(f"Environment variable '{env_var.upper()}' already exists in .env file.")
+                    print(f"-------------------------------------------{len(env_var) * '-'}")
+                    print(f"Conflict detected for environment variable '{env_var.upper()}':")
                     print(f"1. Keep existing value: {line.strip()}")
                     print(f"2. Replace with new value: {env_var.upper()}={value}")
                     choice = input("Choose an option (1 or 2): ").strip()
                     if choice == '1':
                         print("Keeping existing environment variable...")
+                        print(f"-------------------------------------------{len(env_var) * '-'}")
                         return True
                     elif choice == '2':
                         print("Replacing existing environment variable...")
+                        print(f"-------------------------------------------{len(env_var) * '-'}")
                         break
                     else:
                         print("Invalid choice. Please enter 1 or 2.")
                         return False
+                    
            
             set_key(dotenv_path=env_file_path, key_to_set=env_var.upper(), value_to_set=value, quote_mode="never")            
-            print(f"Added environment variable '{env_var.upper()}' to .env file.")
+            print(f">>> Added environment variable '{env_var.upper()}' to .env file.")
             return True
 
     except Exception as e:
@@ -182,6 +186,7 @@ def get_user_choice(options:list[str], use_table: bool = False, table_headers: l
         try:
             choice = int(input("Enter the number for your choice: "))
             if 0 <= choice < len(options):
+                print("\n")
                 return choice
             else:
                 print("Invalid number. Please select a valid option.")
@@ -204,6 +209,7 @@ def yes_no_prompt(prompt: str, additional_text:Optional[str] = None) -> bool:
        print(additional_text)
     while True:
         response = input(f"{prompt} (y/n): ").lower()
+        print("\n")
         if response == 'y':
             return True
         elif response == 'n':
@@ -230,3 +236,9 @@ def get_api_token_cli(provider: str) -> str:
     """
     api_token = input(f"Enter your {provider} API token: ")
     return api_token
+
+def root_dir_error_msg() -> None:
+    """
+    Print an error message when a command is not run in the project root. 
+    """
+    print(f"{Emojis.NO_ENTRY_SIGN.value} No project found. Please run this command from the project root.")

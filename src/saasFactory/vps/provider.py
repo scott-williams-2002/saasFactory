@@ -5,6 +5,7 @@ from linode_api4.objects import Image, Instance
 from linode_api4.paginated_list import PaginatedList
 import os
 import shutil
+from tabulate import tabulate
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
@@ -22,9 +23,11 @@ VPS_PROVIDER_KEY,
 LINODE_LABEL_KEY,
 VPS_PROJECT_NAME_KEY,
 LINODE_INSTANCE_PREFIX,
-LINODE_ID_KEY
+LINODE_ID_KEY,
+LINODE_PUBLIC_IP_KEY,
+Emojis
 )
-from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt
+from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt, root_dir_error_msg
 
 #abstract VPS class
 class VPSProvider:
@@ -46,7 +49,7 @@ class VPSProvider:
         # create key_dir in project directory
         project_root = findProjectRoot()
         if project_root is None:
-            print("No project found. Please run this command from the project root.")
+            root_dir_error_msg()
             return None
         key_dir = os.path.join(project_root, SSH_KEY_DIR_NAME)
 
@@ -196,7 +199,7 @@ class LinodeProvider(VPSProvider):
         """
         try:
             users = self.linode_client.account.users()
-            print(f"Linode API Token is valid. Authenticated as: {''.join([user.username for user in users])}")
+            print(f"Linode API Token is valid {Emojis.CHECK_MARK.value}. Authenticated as: {''.join([user.username for user in users])}")
             return True
         except Exception as e:
             print(f"Error Validating Linode API Token. Client Error: {e}")
@@ -215,7 +218,7 @@ class LinodeProvider(VPSProvider):
         """
         project_root = findProjectRoot()
         if project_root is None:
-            print("No project found. Please run this command from the project root.")
+            root_dir_error_msg()
             return False
         
         config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
@@ -249,9 +252,9 @@ class LinodeProvider(VPSProvider):
             type_format_options = [[str(i), str(type.vcpus), str(mb_to_gb(type.memory)), str(mb_to_gb(type.disk)), str(type.price.hourly), str(type.price.monthly), type.label] for i, type in enumerate(types)]
             type_choice_index = get_user_choice(type_format_options, use_table=True, table_headers=type_format_headers)
     
-            print(f"Image: {images[image_choice_index].id}")
-            print(f"Region: {regions[region_choice_index]}")
-            print(f"Type: {types[type_choice_index]}")
+            print("Selected configurations:")
+            selected = [[LINODE_IMAGE_KEY, images[image_choice_index].id], [LINODE_REGION_KEY, regions[region_choice_index]], [LINODE_TYPE_KEY, types[type_choice_index]]]
+            print(tabulate(selected, headers=["", "Selected"], tablefmt="fancy_grid"))
 
             project_name_config = sf_config_parser.get(VPS_PROJECT_NAME_KEY) if isinstance(sf_config_parser.get(VPS_PROJECT_NAME_KEY), str) else sf_config_parser.get(VPS_PROJECT_NAME_KEY)[VPS_PROJECT_NAME_KEY]
             
@@ -274,7 +277,7 @@ class LinodeProvider(VPSProvider):
         Create a Linode VPS instance with the configured parameters pulled from the CONFIG_FILE_NAME file."""
         project_root = findProjectRoot()
         if project_root is None:
-            print("No project found. Please run this command from the project root.")
+            root_dir_error_msg()
             return
         #ensure token is still valid
         self.test_token_client()
@@ -285,7 +288,7 @@ class LinodeProvider(VPSProvider):
         linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY) #change to optional key for read
         print(f"Linode Configurations: {linode_configs}")
         if linode_configs is None:
-            print("No Linode configurations found.")
+            print(f"{Emojis.ERROR_SIGN.value} No Linode configurations found.")
             return
         
         image = linode_configs.get(LINODE_IMAGE_KEY)
@@ -294,19 +297,19 @@ class LinodeProvider(VPSProvider):
         instance_label = linode_configs.get(LINODE_LABEL_KEY)
 
         if image is None or region is None or instance_type is None or instance_label is None:
-            print("Error reading Linode configurations.")
+            print(f"{Emojis.ERROR_SIGN.value} Error reading Linode configurations.")
             return
 
         # get root password from .env file
         load_dotenv(os.path.join(project_root, ".env"))
         root_pass = os.getenv(VPS_ROOT_PASSWORD_ENV_VAR)
         if root_pass is None:
-            print(f"{VPS_ROOT_PASSWORD_ENV_VAR} not found in .env file. Please make sure it is set.")
+            print(f"{Emojis.WARNING_SIGN.value} {VPS_ROOT_PASSWORD_ENV_VAR} not found in .env file. Please make sure it is set.")
             return
         
         ssh_public_key = self.generate_ssh_key_pair(SSH_KEY_FILE_NAME)#, root_pass)
         if ssh_public_key is None:
-            print("Error generating SSH key pair.")
+            print(f"{Emojis.ERROR_SIGN.value} Error generating SSH key pair.")
             return
 
 
@@ -318,15 +321,15 @@ class LinodeProvider(VPSProvider):
             root_pass=root_pass,
             authorized_keys=[ssh_public_key]
         )
-        print(f"Linode instance created: {new_linode.label}")
-        print(f"Linode IP Address: {new_linode.ipv4[0]}")
-        print(f"Linode ID: {new_linode.id}")
+        print(f"{Emojis.STAR.value} Linode instance successfully created.")
+        instance_details = [[LINODE_LABEL_KEY, new_linode.label], [LINODE_PUBLIC_IP_KEY, new_linode.ipv4[0]], [LINODE_ID_KEY, new_linode.id]]
+        print(tabulate(instance_details, headers=["", "Details"], tablefmt="fancy_grid"))
         linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
         if isinstance(linode_configs, dict):
             linode_configs[LINODE_ID_KEY] = new_linode.id
             sf_config_parser.remove(VPS_CONFIGS_KEY)
         if( not sf_config_parser.append({VPS_CONFIGS_KEY: linode_configs})):
-            print(f"Error adding Linode ID to {CONFIG_FILE_NAME} file.")
+            print(f"{Emojis.ERROR_SIGN.value} Error adding Linode ID to {CONFIG_FILE_NAME} file.")
             print(f"Please add the following config to the {CONFIG_FILE_NAME} file manually:")
             print(f"    '{LINODE_ID_KEY}: {new_linode.id}'")
             return
@@ -338,7 +341,7 @@ class LinodeProvider(VPSProvider):
         """
         project_root = findProjectRoot()
         if project_root is None:
-            print("No project found. Please run this command from the project root.")
+            root_dir_error_msg()
             return
         #ensure token is still valid
         self.test_token_client()
@@ -348,19 +351,19 @@ class LinodeProvider(VPSProvider):
 
         linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
         if linode_configs is None:
-            print("No Linode configurations found.")
+            print(f"{Emojis.ERROR_SIGN.value} No Linode configurations found.")
             return 
         
         instance_id = linode_configs.get(LINODE_ID_KEY)
         if instance_id is None:
-            print("Error reading Linode configurations.")
+            print(f"{Emojis.ERROR_SIGN.value} Error reading Linode configurations.")
             return
         
         instance_to_delete = self.linode_client.linode.instances(Instance.id == instance_id) #object to call .delete() on
         instance_to_delete_label = instance_to_delete[0].label
         instance_to_delete_id = instance_to_delete[0].id
         if instance_to_delete is None:
-            print("No Linode instance found with the specified ID.")
+            print(f"{Emojis.ERROR_SIGN.value} No Linode instance found with the specified ID.")
             return 
         
         delete = yes_no_prompt("Are you sure you want to permanently delete this instance?", additional_text=f"Instance Label: {instance_to_delete_label}\n")
@@ -368,10 +371,10 @@ class LinodeProvider(VPSProvider):
             try:
                 instance_to_delete[0].delete()
                 #print(f"Linode instance {instance_to_delete_details.label} deleted.")
-                print("Sucessfully deleted Linode instance.")
+                print(f"{Emojis.STAR.value} Linode instance successfully deleted.")
                 
             except Exception as e:
-                print(f"Error Deleting Linode Instance. Error: {e}")
+                print(f"{Emojis.ERROR_SIGN.value} Error Deleting Linode Instance. Error: {e}")
                 return 
             # now deleting associated data from sassFactory project directory
             try: 
@@ -382,10 +385,10 @@ class LinodeProvider(VPSProvider):
                     print(f"Removing {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file.")
                     sf_config_parser.remove(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_ID_KEY]))
             except Exception as e:
-                print(f"Error deleting SSH keys and/or {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file. Error: {e}")
+                print(f"{Emojis.ERROR_SIGN.value} Error deleting SSH keys and/or {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file. Error: {e}")
                 return
             
         else:
-            print("Instance deletion cancelled.")
+            print(f"{Emojis.BOMB.value} Instance deletion aborted.")
             return
     

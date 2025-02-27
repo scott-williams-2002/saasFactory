@@ -57,10 +57,12 @@ class YAMLParser:
             if overlapping_keys:
                 for key in overlapping_keys:
                     if current_data[key] != data[key]:
+                        print(f"---------------------------{len(key) * '-'}")
                         print(f"Conflict detected for key '{key}':")
                         print(f"  1. Current value: {current_data[key]}")
                         print(f"  2. New value: {data[key]}")
                         choice = input("Choose the value to keep (1 or 2): ")
+                        print(f"---------------------------{len(key) * '-'}")
                         if choice == '2':
                             current_data[key] = data[key]
             else:

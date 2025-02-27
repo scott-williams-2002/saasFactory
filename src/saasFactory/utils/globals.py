@@ -23,6 +23,7 @@ LINODE_REGION_KEY = "region"
 LINODE_TYPE_KEY = "type"
 LINODE_LABEL_KEY = "label"
 LINODE_ID_KEY = "linode_id"
+LINODE_PUBLIC_IP_KEY = "public_ip"
 
 #Configurations Raw:
 DEFAULT_LINODE_VPS_CONFIG = {
