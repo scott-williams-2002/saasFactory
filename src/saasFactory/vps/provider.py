@@ -395,7 +395,8 @@ class LinodeProvider(VPSProvider):
         
     def check_instance_status(self, log_status: bool = False) -> str|None:
         """
-        Check the status of the Linode VPS instance. Returns the status of the instance as a string.
+        Check the status of the Linode VPS instance. Returns the status of the instance as a string. 
+        Can return the following statuses: running, offline, booting, busy, rebooting, shutting_down, provisioning, deleting, migrating, rebuilding, cloning, restoring, stopped, billing_suspension
 
         Args:
             log_status (bool): If True, the status of the instance will be printed to the console.
@@ -421,7 +422,6 @@ class LinodeProvider(VPSProvider):
             instance_status = instance.status
             instance_status = instance_status.lower().strip()
             if log_status:
-                #running offline booting busy rebooting shutting_down provisioning deleting migrating rebuilding cloning restoring stopped billing_suspension
                 if instance_status == "running":
                     print(f"{Emojis.LIGHTBULB.value} Linode instance is running.")
                 elif instance_status == "booting" or instance_status == "rebooting":
