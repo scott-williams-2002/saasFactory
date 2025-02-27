@@ -77,21 +77,62 @@ class YAMLParser:
     def remove(self, key: str) -> bool:
         """
         Remove a section of the YAML file based on the key.
+        Supports nested keys using dot notation (e.g., "parent.child.key").
 
         Args:
-            key (str): The key to remove from the YAML file.
+            key (str): The key to remove from the YAML file. Can be nested using dot notation.
 
         Returns:
             bool: True if the key was successfully removed, False otherwise.
         """
         try:
             data = self.read()
-            if data and key in data:
-                del data[key]
-                with open(self.file_path, 'w') as file:
-                    yaml.safe_dump(data, file, default_flow_style=False)
-                return True
-            return False
+            if data is None:
+                print(f"Error: {os.path.basename(self.file_path)} is empty.")
+                return False
+
+            # Handle nested keys
+            key_parts = key.split('.')
+            current = data
+            parent = None
+            final_key = key_parts[-1]
+
+            # Navigate through the nested structure
+            for i, part in enumerate(key_parts[:-1]):
+                if part not in current:
+                    print(f"Error: Key path '{'.'.join(key_parts[:i+1])}' not found in {os.path.basename(self.file_path)}.")
+                    return False
+                parent = current
+                current = current[part]
+
+            # Check if the final key exists in the current level
+            if final_key not in current:
+                print(f"Error: Key '{key}' not found in {os.path.basename(self.file_path)}.")
+                return False
+
+            # Remove the key
+            if parent is None:
+                del data[final_key]
+            else:
+                del current[final_key]
+
+            # Save the modified data
+            with open(self.file_path, 'w') as file:
+                yaml.safe_dump(data, file, default_flow_style=False)
+            return True
         except Exception as e:
             print(f"Error removing key '{key}' from {os.path.basename(self.file_path)}: {e}")
             return False
+
+
+def list_to_dot_notation(data: list[str]) -> str:
+    """
+    Convert a list of strings to a string using dot notation. Used for indexing nested keys in YAML files.
+
+    Args:
+        data (list[str]): The list of strings to convert.
+
+    Returns:
+        str: The resulting string using dot notation.
+    """
+    return '.'.join(data)

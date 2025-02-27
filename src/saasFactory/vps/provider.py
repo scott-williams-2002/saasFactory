@@ -8,7 +8,7 @@ import shutil
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
-from saasFactory.utils.yaml import YAMLParser
+from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.utils.globals import (
 SSH_KEY_DIR_NAME,
 VPS_ROOT_PASSWORD_ENV_VAR, 
@@ -351,43 +351,41 @@ class LinodeProvider(VPSProvider):
             print("No Linode configurations found.")
             return 
         
-
-        
         instance_id = linode_configs.get(LINODE_ID_KEY)
         if instance_id is None:
             print("Error reading Linode configurations.")
             return
         
         instance_to_delete = self.linode_client.linode.instances(Instance.id == instance_id) #object to call .delete() on
-        instance_to_delete_details = instance_to_delete[0]
+        instance_to_delete_label = instance_to_delete[0].label
+        instance_to_delete_id = instance_to_delete[0].id
         if instance_to_delete is None:
             print("No Linode instance found with the specified ID.")
             return 
         
-        delete = yes_no_prompt("Are you sure you want to permanently delete this instance?", additional_text=f"Instance Details ID: {instance_to_delete_details.id}, Label: {instance_to_delete_details.label}\n")
+        delete = yes_no_prompt("Are you sure you want to permanently delete this instance?", additional_text=f"Instance Label: {instance_to_delete_label}\n")
         if delete:
             try:
                 instance_to_delete[0].delete()
                 #print(f"Linode instance {instance_to_delete_details.label} deleted.")
-                print("Linode instance deleted.")
+                print("Sucessfully deleted Linode instance.")
+                
+            except Exception as e:
+                print(f"Error Deleting Linode Instance. Error: {e}")
+                return 
+            # now deleting associated data from sassFactory project directory
+            try: 
                 #removing ssh keys and instance ID
                 if os.path.exists(os.path.join(project_root, SSH_KEY_DIR_NAME)):
                     print(f"Removing {SSH_KEY_DIR_NAME} folder and its contents.")
                     shutil.rmtree(os.path.join(project_root, SSH_KEY_DIR_NAME))
                     print(f"Removing {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file.")
-                    sf_config_parser.remove(LINODE_ID_KEY) # this didn't work
-                return
+                    sf_config_parser.remove(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_ID_KEY]))
             except Exception as e:
-                print(f"Error Deleting Linode Instance. Error: {e}")
-                return 
+                print(f"Error deleting SSH keys and/or {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file. Error: {e}")
+                return
+            
         else:
             print("Instance deletion cancelled.")
             return
     
-
-        #also remove the ssh keys folder and its contents
-        
-        #instance_id = 
-#
-        #for instance in my_linodes:
-        #    print(f"ID: {instance.id}, Label: {instance.label}")
