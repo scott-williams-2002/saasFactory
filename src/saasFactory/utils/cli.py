@@ -2,7 +2,7 @@ import os
 from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
-from saasFactory.utils.globals import CONFIG_FILE_NAME, Emojis
+from saasFactory.utils.globals import CONFIG_FILE_NAME, Emojis, PROJECT_DIR_NAME_SUFFIX
 from saasFactory.utils.yaml import YAMLParser
 from dotenv import load_dotenv, set_key
 from pyfiglet import figlet_format
@@ -14,7 +14,11 @@ def printWelcomeMessage() -> None:
     print(ascii_logo)
     print(f"Created by:\n{ascii_name}")
 
-    
+def printInitInstructions(projectFolderName: str) -> None:
+    print(f"To use the saasFactory CLI, please run the following commands in the project folder '{projectFolderName}':")
+    print("1. `sfy vps synth --provider [linode/(more to come)]` - Synthesize the configurations for a project VPS instance")
+    print("2. `sfy vps up` - Start the VPS instance")
+    print("3. `sfy vps down` - Stop the VPS instance")
 
 
 def createProjectDir(projectName: str) -> str|None:
@@ -28,10 +32,12 @@ def createProjectDir(projectName: str) -> str|None:
         str: The absolute path of the created project directory, or None if an error occurred.
     """
     try:
-        project_path = os.path.abspath(projectName)
+        project_path = os.path.abspath(f"{projectName}{PROJECT_DIR_NAME_SUFFIX}")
         if not os.path.exists(project_path):
             os.makedirs(project_path)
-        print(f"Initializing project '{projectName}' in: {project_path}")
+        print(f"Initializing a new project:  '{projectName}'")
+        print(f"------------------------------{len(projectName) * '-'}")
+        print(f">>> Created project directory at: {project_path}")
         return project_path
     except Exception as e:
         print(f"Error creating project directory: {e}")
@@ -56,7 +62,7 @@ def createEnvFile(project_path: str) -> None:
             with open(env_file_path, "w") as env_file:
                 pass
             env_file.close()
-            print(f"Created .env file in: {env_file_path}")
+            print(f">>> Created .env file at: {env_file_path}")
     except Exception as e:
         print(f"Error creating .env file: {e}")
 
@@ -83,7 +89,7 @@ def createSFConfigFile(project_path: str, project_name: str) -> None:
         yaml_file = YAMLParser(config_file_path)
         yaml_file.append({"project_name": project_name})
         yaml_file.append({"created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
-        print(f"Created {CONFIG_FILE_NAME} file in: {config_file_path}")
+        print(f">>> Created {CONFIG_FILE_NAME} file at: {config_file_path}")
     except Exception as e:
         print(f"Error creating {CONFIG_FILE_NAME} file: {e}")
 

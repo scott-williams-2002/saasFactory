@@ -1,10 +1,9 @@
 import argparse
 import os
 from dotenv import load_dotenv
-from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, PROJECT_DIR_NAME_SUFFIX, CONFIG_FILE_NAME
+from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX
 from saasFactory.vps.provider import LinodeProvider
-from saasFactory.utils.cli import yes_no_prompt
 
 
 """
@@ -95,14 +94,17 @@ def handle_init(args):
     project_path_input = os.path.abspath(args.path)
     if(args.name):
         project_name = args.name
-        project_root_folder = createProjectDir(f"{project_name}{PROJECT_DIR_NAME_SUFFIX}")
+        project_root_folder = createProjectDir(project_name)
+        project_relative_folder = project_name + PROJECT_DIR_NAME_SUFFIX
     else:
         project_name = os.path.basename(project_path_input)
-        project_root_folder = createProjectDir(f"{os.path.basename(project_path_input)}{PROJECT_DIR_NAME_SUFFIX}")
+        project_root_folder = createProjectDir(os.path.basename(project_path_input))
+        project_relative_folder = os.path.basename(project_path_input) + PROJECT_DIR_NAME_SUFFIX
 
     #call function that creates a .env file and sf_config.yaml in the root project folder
     createEnvFile(project_root_folder)
     createSFConfigFile(project_root_folder, project_name)
+    printInitInstructions(project_relative_folder)
     
     
 def handle_vps_synth(args):
