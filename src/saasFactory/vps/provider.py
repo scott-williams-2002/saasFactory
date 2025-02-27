@@ -393,21 +393,48 @@ class LinodeProvider(VPSProvider):
             print(f"{Emojis.BOMB.value} Instance deletion aborted.")
             return
         
-    def check_instance_status(self) -> None:
+    def check_instance_status(self, log_status: bool = False) -> str|None:
         """
-        Check the status of the Linode VPS instance.
+        Check the status of the Linode VPS instance. Returns the status of the instance as a string.
+
+        Args:
+            log_status (bool): If True, the status of the instance will be printed to the console.
+
+        Returns:
+            str: The status of the Linode VPS instance.
         """
         project_root = findProjectRoot()
         if project_root is None:
             root_dir_error_msg()
             return
         self.test_token_client()
+        try:
+            config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
+            sf_config_parser = YAMLParser(config_file_path)
+            linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
+            instance_id = linode_configs.get(LINODE_ID_KEY)
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Error reading Linode configurations. Error: {e}")
+            return None
+        try:
+            instance = self.linode_client.linode.instances(Instance.id == instance_id)[0]
+            instance_status = instance.status
+            if log_status:
+                if instance_status == "running":
+                    print(f"{Emojis.LIGHTBULB.value} Linode instance is running.")
+                elif instance_status == "booting" or instance_status == "rebooting":
+                    print(f"{Emojis.LOADING.value} Linode instance is {instance_status}.")
+                elif instance_status == "provisioning":
+                    print(f"{Emojis.SOON.value} Linode instance is {instance_status}.")
+                elif instance_status is None or instance_status == "offline":
+                    print(f"{Emojis.STOP_SIGN.value} Linode instance is either non-existent or has been deleted.")
+                    return None
+            return instance_status  
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Error getting Linode instance status. Error: {e}")
+            return None
+        
 
-        config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
-        sf_config_parser = YAMLParser(config_file_path)
-        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
-        instance_id = linode_configs.get(LINODE_ID_KEY)
-        instance = self.linode_client.linode.instances(Instance.id == instance_id)[0]
-        print(instance.status)
+           
 
     

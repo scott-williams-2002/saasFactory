@@ -54,3 +54,5 @@ class Emojis(Enum):
     BOMB = "💣"
     DYNAMITE = "🧨"
     ROCKET = "🚀"
+    SOON = "🔜"
+    LOADING = "🔄️"
