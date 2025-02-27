@@ -2,7 +2,7 @@ import argparse
 import os
 from dotenv import load_dotenv
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE
 from saasFactory.vps.provider import LinodeProvider
 
 
@@ -126,7 +126,7 @@ def handle_vps_synth(args):
         # use default configurations for VPS instance
         defaults_choice = yes_no_prompt(
             "Would you like to use default configurations for the VPS instance?",
-            additional_text=DEFAULT_LINODE_VPS_CONFIG_TEXT)
+            additional_text=DEFAULT_LINODE_VPS_CONFIG_TABLE)
         if defaults_choice:
             print("Using default configurations for the VPS instance.")
             if(not linVPS.configure_instance(DEFAULT_LINODE_VPS_CONFIG)):

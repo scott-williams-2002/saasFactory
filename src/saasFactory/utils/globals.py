@@ -1,5 +1,6 @@
 #Files Names:
 from enum import Enum
+from tabulate import tabulate
 
 
 PROJECT_DIR_NAME_SUFFIX = "_sfy_project" # if user doesn't specify a project name this gets added to the current directory name
@@ -32,6 +33,7 @@ DEFAULT_LINODE_VPS_CONFIG = {
 
 #Configurations Text Formatted:
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
+DEFAULT_LINODE_VPS_CONFIG_TABLE = "Here are the default Linode VPS Configs:\n" + tabulate([[key, value] for key, value in DEFAULT_LINODE_VPS_CONFIG.items()], headers=["", "Default"], tablefmt="fancy_grid")
 
 #Resources Name Prefixes:
 LINODE_INSTANCE_PREFIX = "sfy-instance-"

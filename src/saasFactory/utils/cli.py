@@ -2,7 +2,7 @@ import os
 from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
-from saasFactory.utils.globals import CONFIG_FILE_NAME, Emojis, PROJECT_DIR_NAME_SUFFIX
+from saasFactory.utils.globals import CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, Emojis
 from saasFactory.utils.yaml import YAMLParser
 from dotenv import load_dotenv, set_key
 from pyfiglet import figlet_format
@@ -15,10 +15,15 @@ def printWelcomeMessage() -> None:
     print(f"Created by:\n{ascii_name}")
 
 def printInitInstructions(projectFolderName: str) -> None:
-    print(f"To use the saasFactory CLI, please run the following commands in the project folder '{projectFolderName}':")
-    print("1. `sfy vps synth --provider [linode/(more to come)]` - Synthesize the configurations for a project VPS instance")
-    print("2. `sfy vps up` - Start the VPS instance")
-    print("3. `sfy vps down` - Stop the VPS instance")
+    print(f"\n{Emojis.STAR.value} Project initialized successfully!\n")
+    usage_msg = f"To use the saasFactory CLI, please run the following commands in the project folder '{projectFolderName}':"
+    print(f"\n{usage_msg}\n{len(usage_msg) * '-'}")
+    print("  1. `sfy vps synth --provider [linode/(more to come)] --api-token [token optional]`")
+    print("     - Synthesize the configurations for a project VPS instance.\n")
+    print("  2. `sfy vps up`")
+    print("     - Start the VPS instance.\n")
+    print("  3. `sfy vps down`")
+    print("     - Stop the VPS instance.\n")
 
 
 def createProjectDir(projectName: str) -> str|None:
