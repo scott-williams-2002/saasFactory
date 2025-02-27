@@ -328,6 +328,7 @@ class LinodeProvider(VPSProvider):
         linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
         if isinstance(linode_configs, dict):
             linode_configs[LINODE_ID_KEY] = new_linode.id
+            linode_configs[LINODE_PUBLIC_IP_KEY] = new_linode.ipv4[0]
             sf_config_parser.remove(VPS_CONFIGS_KEY)
         if( not sf_config_parser.append({VPS_CONFIGS_KEY: linode_configs})):
             print(f"{Emojis.ERROR_SIGN.value} Error adding Linode ID to {CONFIG_FILE_NAME} file.")
@@ -383,8 +384,9 @@ class LinodeProvider(VPSProvider):
                 if os.path.exists(os.path.join(project_root, SSH_KEY_DIR_NAME)):
                     print(f"Removing {SSH_KEY_DIR_NAME} folder and its contents.")
                     shutil.rmtree(os.path.join(project_root, SSH_KEY_DIR_NAME))
-                    print(f"Removing {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file.")
+                    print(f"Removing {LINODE_ID_KEY} and {LINODE_PUBLIC_IP_KEY} from {CONFIG_FILE_NAME} file.")
                     sf_config_parser.remove(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_ID_KEY]))
+                    sf_config_parser.remove(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
             except Exception as e:
                 print(f"{Emojis.ERROR_SIGN.value} Error deleting SSH keys and/or {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file. Error: {e}")
                 return
