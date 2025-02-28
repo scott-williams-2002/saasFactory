@@ -95,4 +95,5 @@ You can now continue with the following steps to complete your setup:
 
 1. Run the following command to connect to your GitHub repository and deploy Dockerized web apps: `sfy coolify github_connect`
 2. Run the following command to connect a Telegram bot to your Coolify dashboard for notifications: `sfy coolify telegram_connect`
+3. Run the following command to create and interact with resources in coolify dashboard: `sfy coolify resource`
 """
