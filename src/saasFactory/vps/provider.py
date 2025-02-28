@@ -27,7 +27,8 @@ VPS_PROJECT_NAME_KEY,
 LINODE_INSTANCE_PREFIX,
 LINODE_ID_KEY,
 LINODE_PUBLIC_IP_KEY,
-Emojis
+Emojis,
+LinodeStatus
 )
 from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt, root_dir_error_msg
 
@@ -408,11 +409,11 @@ class LinodeProvider(VPSProvider):
             instance_status = instance.status
             instance_status = instance_status.lower().strip()
             if log_status:
-                if instance_status == "running":
-                    print(f"{Emojis.LIGHTBULB.value} Linode instance is running.")
-                elif instance_status == "booting" or instance_status == "rebooting":
+                if instance_status == LinodeStatus.RUNNING.value:
+                    print(f"{Emojis.LIGHTBULB.value} Linode instance is {instance_status}.")
+                elif instance_status == LinodeStatus.BOOTING.value or instance_status == LinodeStatus.REBOOTING.value or instance_status == LinodeStatus.SHUTTING_DOWN.value or instance_status == LinodeStatus.BUSY.value:
                     print(f"{Emojis.LOADING.value} Linode instance is {instance_status}.")
-                elif instance_status == "provisioning":
+                elif instance_status == LinodeStatus.PROVISIONING.value:
                     print(f"{Emojis.SOON.value} Linode instance is {instance_status}.")
                 elif instance_status is None:
                     print(f"{Emojis.STOP_SIGN.value} Linode instance is either non-existent or has been deleted.")

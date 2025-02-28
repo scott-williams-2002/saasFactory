@@ -58,8 +58,18 @@ class Emojis(Enum):
     LOADING = "🔄️"
     DOLLAR = "💲"
     EXCLAMATION = "❗"
+    CLOCK = "⏱️"
 
 class VPSCommands(Enum):
-    UPDATE_CMD = "sudo apt update"
-    UPGRADE_CMD = "sudo apt upgrade"
+    UPDATE_CMD = "sudo apt update -y"
+    UPGRADE_CMD = "sudo apt upgrade -y"
     COOLIFY_INSTALL_CMD = "curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash"
+
+class LinodeStatus(Enum):
+    BOOTING = "booting"
+    REBOOTING = "rebooting"
+    PROVISIONING = "provisioning"
+    RUNNING = "running"
+    OFFLINE = "offline"
+    SHUTTING_DOWN = "shutting_down"
+    BUSY = "busy"

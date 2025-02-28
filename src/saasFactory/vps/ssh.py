@@ -100,15 +100,18 @@ class SSHConnection:
         text_len = print_with_underline(f"{Emojis.ROCKET.value} Executing command: `{command}`")
         try:
             stdin, stdout, stderr = self.ssh_client.exec_command(command)
+            full_output = ""
             if logging:
                 while not stdout.channel.exit_status_ready():
                     if stdout.channel.recv_ready():
                         output = stdout.channel.recv(1024).decode()
                         print(output, end="")
+                        full_output += output
             print("\n" + "-" * text_len)
-            return stdout.read().decode()
+            return full_output
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Error executing command: {str(e)}")
+            print(f"STDERR: {stderr.read().decode()}")
             print("\n" + "-" * text_len)
             return None
         

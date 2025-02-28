@@ -2,11 +2,11 @@ import argparse
 import os
 from dotenv import load_dotenv
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, Emojis
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, Emojis, VPSCommands, LinodeStatus
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
-
+from tabulate import tabulate
 
 """
 EACH CLI Function has Error logging
@@ -220,6 +220,14 @@ def handle_coolify_install(args):
     if not os.path.exists(config_file):
         print(f"{Emojis.ERROR_SIGN.value} Project configuration file not found.")
         return
+    #check if the instance is running
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    vps_status = linVPS.check_instance_status(log_status=False)
+    if not vps_status == LinodeStatus.RUNNING.value:
+        print(f"{Emojis.ERROR_SIGN.value} VPS instance is not running.")
+        print(f"Please ensure the VPS instance is running before installing coolify. Current status: {vps_status}")
+   
     print(f"{Emojis.CHECK_MARK.value} Attempting SSH connection to the VPS instance.")
     sf_config_parser = YAMLParser(config_file)
     vps_ipv4 = sf_config_parser.get(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
@@ -228,13 +236,22 @@ def handle_coolify_install(args):
         print(f"{Emojis.ERROR_SIGN.value} SSH Connection Failed.")
         return
     print(f"{Emojis.CHECK_MARK.value} SSH Connection Successful.")
+    
+    if not yes_no_prompt(f"Those commands will take a while {Emojis.CLOCK.value}  to execute. Are you sure you want to continue?", additional_text="\n\nThe following commands will be executed:\n" + tabulate([[VPSCommands.UPDATE_CMD.value], [VPSCommands.UPGRADE_CMD.value], [VPSCommands.COOLIFY_INSTALL_CMD.value]])):
+        print(f"\n{Emojis.DYNAMITE.value} Aborted Coolify Installation.")
+        return
 
     print(f"{Emojis.CHECK_MARK.value} Attempting to install coolify on the VPS instance.\n")
-    ssh_con.execute_command("sudo apt-get update", logging=True)
-    #install_cmd = ssh_con.execute_command("sudo apt-get install coolify", logging=True)
-    #if install_cmd is None:
-    #    print(f"{Emojis.ERROR_SIGN.value} Coolify Installation Failed.")
-    #    return
+    if not ssh_con.execute_command(VPSCommands.UPDATE_CMD.value, logging=True):
+        print(f"{Emojis.ERROR_SIGN.value} VPS Update Failed.")
+        return
+    if not ssh_con.execute_command(VPSCommands.UPGRADE_CMD.value, logging=True):
+        print(f"{Emojis.ERROR_SIGN.value} VPS Upgrade Failed.")
+        return
+    if not ssh_con.execute_command(VPSCommands.COOLIFY_INSTALL_CMD.value, logging=True):
+        print(f"{Emojis.ERROR_SIGN.value} Coolify Installation Failed.")
+        return 
+    
     print(f"{Emojis.STAR.value} Coolify Installation Successful.")
     ssh_con.disconnect()
 
