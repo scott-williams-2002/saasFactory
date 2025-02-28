@@ -59,6 +59,9 @@ class Emojis(Enum):
     DOLLAR = "💲"
     EXCLAMATION = "❗"
     CLOCK = "⏱️"
+    LOCK = "🔒"
+    KEY = "🔑"
+    DOCS = "📚"
 
 class VPSCommands(Enum):
     UPDATE_CMD = "sudo apt update -y"
@@ -73,3 +76,23 @@ class LinodeStatus(Enum):
     OFFLINE = "offline"
     SHUTTING_DOWN = "shutting_down"
     BUSY = "busy"
+
+
+
+#block messages
+POST_COOLIFY_INSTALL_MSG = f"""
+
+You can access your instance dashboard through your Public IP: http://[PUBLIC_IP]:8000.
+
+1. Create your admin login credentials on the dashboard. Make sure you save these somewhere safe. {Emojis.LOCK.value}
+2. Once logged in, navigate to "Keys & Tokens" > "API Tokens" to create and save a new token with specified permissions. {Emojis.KEY.value}
+3. For saasFactory to function, we need "read", "write", and "deploy" permissions. {Emojis.CHECK_MARK.value}
+
+Refer to the Coolify documentation for more information: https://coolify.ios/docs 📚
+
+
+You can now continue with the following steps to complete your setup:
+
+1. Run the following command to connect to your GitHub repository and deploy Dockerized web apps: `sfy coolify github_connect`
+2. Run the following command to connect a Telegram bot to your Coolify dashboard for notifications: `sfy coolify telegram_connect`
+"""
