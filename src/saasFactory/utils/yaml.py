@@ -27,15 +27,29 @@ class YAMLParser:
     def get(self, key: str) -> dict|str|None:
         """
         Get the value of a specific key from the YAML file.
+        Supports nested keys using dot notation (e.g., "parent.child.key").
 
         Args:
-            key (str): The key to retrieve the value for.
+            key (str): The key to retrieve the value for. Can be nested using dot notation.
 
         Returns:
-            any: The value corresponding to the key, or None if the key does not exist.
+            dict|str|None: The value corresponding to the key, or None if the key does not exist.
         """
         data = self.read()
-        return data.get(key) if data else None
+        if data is None:
+            return None
+
+        # Handle nested keys
+        key_parts = key.split('.')
+        current = data
+
+        # Navigate through the nested structure
+        for part in key_parts:
+            if not isinstance(current, dict) or part not in current:
+                return None
+            current = current[part]
+
+        return current
 
     def append(self, data: dict) -> bool:
         """

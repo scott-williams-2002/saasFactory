@@ -4,6 +4,7 @@ from getpass import getpass
 from linode_api4 import LinodeClient
 from linode_api4.objects import Image, Instance
 from linode_api4.paginated_list import PaginatedList
+from paramiko import RSAKey
 import os
 import shutil
 from tabulate import tabulate
@@ -35,13 +36,12 @@ class VPSProvider:
     def __init__(self, api_token: str):
         self.api_token = api_token
 
-    def generate_ssh_key_pair(self,key_name: str, passphrase: str = None) -> str|None:
+    def generate_ssh_key_pair(self, key_name: str, passphrase: str = None) -> str|None:
         """
         Generate an SSH key pair and return the public key in Linode-compatible format.
 
         Args:
             key_name (str): Name for the key pair files
-            key_dir (str): Directory to save keys (default: ssh_keys)
             passphrase (str): Optional passphrase for private key encryption
 
         Returns:
@@ -57,38 +57,22 @@ class VPSProvider:
         if not os.path.exists(key_dir):
             os.makedirs(key_dir, mode=0o700) #mode 0o700: rwx for owner only
 
-        # Generate RSA key pair
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=4096,
-            backend=default_backend()
-        )
+        # Generate RSA key pair using paramiko
+        private_key = RSAKey.generate(bits=4096)
 
-        # Serialize private key
-        private_pem = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.BestAvailableEncryption(passphrase.encode()) if passphrase else serialization.NoEncryption()
-        )
-
-        # Serialize public key
-        public_key = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.OpenSSH,
-            format=serialization.PublicFormat.OpenSSH
-        )
-
-        # Write keys to files
         private_path = os.path.join(key_dir, f"{key_name}")
         public_path = os.path.join(key_dir, f"{key_name}.pub")
 
-        with open(private_path, 'wb') as f:
-            f.write(private_pem)
+        # Write private key to file
+        private_key.write_private_key_file(private_path, password=passphrase)
         os.chmod(private_path, 0o600)
 
-        with open(public_path, 'wb') as f:
-            f.write(public_key)
+        # Write public key to file
+        with open(public_path, 'w') as f:
+            f.write(f"{private_key.get_name()} {private_key.get_base64()}")
 
-        return public_key.decode('utf-8')
+        return f"{private_key.get_name()} {private_key.get_base64()}"
+
     
     
     def get_root_password(self, min_length: int = 8) -> None:

@@ -1,8 +1,7 @@
-#Files Names:
 from enum import Enum
 from tabulate import tabulate
 
-
+#Files Names:
 PROJECT_DIR_NAME_SUFFIX = "_sfy_project" # if user doesn't specify a project name this gets added to the current directory name
 CONFIG_FILE_NAME = "sf_config.yaml"
 SSH_KEY_FILE_NAME = "sfy_key"
@@ -31,6 +30,7 @@ DEFAULT_LINODE_VPS_CONFIG = {
     LINODE_REGION_KEY: "us-central",
     LINODE_TYPE_KEY: "g6-standard-1"
 }
+DEFAULT_LINODE_USERNAME = "root"
 
 #Configurations Text Formatted:
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
@@ -58,3 +58,8 @@ class Emojis(Enum):
     LOADING = "🔄️"
     DOLLAR = "💲"
     EXCLAMATION = "❗"
+
+class VPSCommands(Enum):
+    UPDATE_CMD = "sudo apt update"
+    UPGRADE_CMD = "sudo apt upgrade"
+    COOLIFY_INSTALL_CMD = "curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash"

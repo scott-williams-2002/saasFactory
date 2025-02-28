@@ -242,3 +242,15 @@ def root_dir_error_msg() -> None:
     Print an error message when a command is not run in the project root. 
     """
     print(f"{Emojis.NO_ENTRY_SIGN.value} No project found. Please run this command from the project root.")
+
+def print_with_underline(text: str) -> int:
+    """
+    Print text with an underline.
+    Args:
+        text (str): The text to print.
+    Returns:
+        int: The length of the text.
+    """
+    print(text)
+    print(len(text) * "-")
+    return len(text)

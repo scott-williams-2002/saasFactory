@@ -2,8 +2,10 @@ import argparse
 import os
 from dotenv import load_dotenv
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, DEFAULT_LINODE_VPS_CONFIG_TEXT, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, Emojis
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, Emojis
 from saasFactory.vps.provider import LinodeProvider
+from saasFactory.vps.ssh import SSHConnection
+from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 
 
 """
@@ -153,12 +155,12 @@ def handle_vps_synth(args):
         if defaults_choice:
             print("Using default configurations for the VPS instance.")
             if(not linVPS.configure_instance(DEFAULT_LINODE_VPS_CONFIG)):
-                print(f"{Emojis.STAR.value} VPS Configuration Failure.")
+                print(f"{Emojis.ERROR_SIGN.value} VPS Configuration Failure.")
                 return
         else:
             print("Collecting configuration parameters for the VPS instance.")
             if(not linVPS.configure_instance()):
-                print("VPS Configuration Failure.")
+                print(f"{Emojis.ERROR_SIGN.value} VPS Configuration Failure.")
                 return
     else:
         print(f"{Emojis.ERROR_SIGN.value} Invalid provider. Please provide a valid provider.")
@@ -189,9 +191,9 @@ def handle_vps_down(args):
         return
     config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
     if not os.path.exists(config_file):
-        print("Project configuration file not found.")
+        print(f"{Emojis.ERROR_SIGN.value} Project configuration file not found.")
         return
-    print("Config File Found. Destroying the VPS instance.")
+    print(f"{Emojis.CHECK_MARK.value} Config File Found. Destroying the VPS instance.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
     linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
     linVPS.destroy_instance()
@@ -203,15 +205,42 @@ def handle_vps_status(args):
         return
     config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
     if not os.path.exists(config_file):
-        print("Project configuration file not found.")
+        print(f"{Emojis.ERROR_SIGN.value} Project configuration file not found.")
         return
-    print("Config File Found. Checking the VPS instance status.")
+    print(f"{Emojis.CHECK_MARK.value} Config File Found. Checking the VPS instance status.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
     linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
-    linVPS.check_instance_status()
+    linVPS.check_instance_status(log_status=True)
 
 def handle_coolify_install(args):
-    pass 
+    if findProjectRoot() is None:
+        root_dir_error_msg()
+        return
+    config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
+    if not os.path.exists(config_file):
+        print(f"{Emojis.ERROR_SIGN.value} Project configuration file not found.")
+        return
+    print(f"{Emojis.CHECK_MARK.value} Attempting SSH connection to the VPS instance.")
+    sf_config_parser = YAMLParser(config_file)
+    vps_ipv4 = sf_config_parser.get(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
+    ssh_con = SSHConnection(host=vps_ipv4, username=DEFAULT_LINODE_USERNAME)
+    if not ssh_con.connect():
+        print(f"{Emojis.ERROR_SIGN.value} SSH Connection Failed.")
+        return
+    print(f"{Emojis.CHECK_MARK.value} SSH Connection Successful.")
+
+    print(f"{Emojis.CHECK_MARK.value} Attempting to install coolify on the VPS instance.\n")
+    ssh_con.execute_command("sudo apt-get update", logging=True)
+    #install_cmd = ssh_con.execute_command("sudo apt-get install coolify", logging=True)
+    #if install_cmd is None:
+    #    print(f"{Emojis.ERROR_SIGN.value} Coolify Installation Failed.")
+    #    return
+    print(f"{Emojis.STAR.value} Coolify Installation Successful.")
+    ssh_con.disconnect()
+
+                            
+
+    
     # prompt user to run manual commands to sign into coolify ...
 
 
