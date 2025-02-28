@@ -85,8 +85,9 @@ POST_COOLIFY_INSTALL_MSG = f"""
 You can access your instance dashboard through your Public IP: http://[PUBLIC_IP]:8000.
 
 1. Create your admin login credentials on the dashboard. Make sure you save these somewhere safe. {Emojis.LOCK.value}
-2. Once logged in, navigate to "Keys & Tokens" > "API Tokens" to create and save a new token with specified permissions. {Emojis.KEY.value}
-3. For saasFactory to function, we need "read", "write", and "deploy" permissions. {Emojis.CHECK_MARK.value}
+2. Start onboarding. When prompted choose localhost (remote server is for distributed setups), and create a new project to finish onobarding.
+3. Once logged in and onboarded, navigate to "Keys & Tokens" > "API Tokens" to create and save a new token with specified permissions. {Emojis.KEY.value}
+4. For saasFactory to function, we need "read", "write", and "deploy" permissions. {Emojis.CHECK_MARK.value}
 
 Refer to the Coolify documentation for more information: https://coolify.ios/docs 📚
 
