@@ -12,17 +12,28 @@ SSH_KEY_DIR_NAME = "ssh_keys"
 #Environment Variable Names:
 VPS_API_TOKEN_ENV_VAR = "VPS_API_TOKEN"
 VPS_ROOT_PASSWORD_ENV_VAR = "VPS_ROOT_PASSWORD"
+COOLIFY_API_TOKEN_ENV_VAR = "COOLIFY_API_TOKEN"
 
-#Configurations Keys:
+#Configurations Key VPS
 VPS_PROJECT_NAME_KEY = "project_name"
 VPS_PROVIDER_KEY = "provider"
-VPS_CONFIGS_KEY = "vps_configs"
+VPS_CONFIGS_KEY = "vps_configs" #parent key
 LINODE_IMAGE_KEY = "image"
 LINODE_REGION_KEY = "region"   
 LINODE_TYPE_KEY = "type"
 LINODE_LABEL_KEY = "label"
 LINODE_ID_KEY = "linode_id"
 LINODE_PUBLIC_IP_KEY = "public_ip"
+
+#Configurations Key Coolify
+class CoolifyKeys(Enum):
+    COOLIFY_CONFIGS_KEY = "coolify_configs" #parent key
+    COOLIFY_USE_DOMAIN_KEY = "use_domain" #boolean value
+    COOLIFY_DOMAIN_KEY = "domain"
+    COOLIFY_USE_HTTPS_KEY = "use_https" #boolean value
+    COOLIFY_PORT_KEY = "port"
+    COOLIFY_OMIT_PORT_KEY = "omit_port"
+
 
 #Configurations Raw:
 DEFAULT_LINODE_VPS_CONFIG = {
@@ -31,6 +42,7 @@ DEFAULT_LINODE_VPS_CONFIG = {
     LINODE_TYPE_KEY: "g6-standard-1"
 }
 DEFAULT_LINODE_USERNAME = "root"
+DEFAULT_COOLIFY_PORT = 8000
 
 #Configurations Text Formatted:
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
@@ -94,7 +106,8 @@ Refer to the Coolify documentation for more information: https://coolify.ios/doc
 
 You can now continue with the following steps to complete your setup:
 
-1. Run the following command to connect to your GitHub repository and deploy Dockerized web apps: `sfy coolify github_connect`
-2. Run the following command to connect a Telegram bot to your Coolify dashboard for notifications: `sfy coolify telegram_connect`
-3. Run the following command to create and interact with resources in coolify dashboard: `sfy coolify resource`
+1. Run `sfy coolify synth` to synthesize the configurations for your Coolify dashboard.
+2. Run `sfy coolify github_connect` to connect to your GitHub repository and deploy Dockerized web apps.
+3. Run `sfy coolify telegram_connect` to connect a Telegram bot to your Coolify dashboard for notifications.
+4. Run `sfy coolify resource` to create and interact with resources in coolify dashboard.
 """

@@ -230,9 +230,9 @@ def mb_to_gb(mb: int) -> int:
 
 def get_api_token_cli(provider: str) -> str:
     """
-    Get the Linode API token from user input.
+    Get the API token from user input.
     Returns:
-        str: The Linode API token entered by the user.
+        str: The API token entered by the user.
     """
     api_token = input(f"Enter your {provider} API token: ")
     return api_token

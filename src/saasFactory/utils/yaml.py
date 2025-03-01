@@ -1,5 +1,6 @@
 import yaml
 import os
+from collections import OrderedDict
 
 class YAMLParser:
     def __init__(self, file_path: str) -> None:
@@ -51,40 +52,43 @@ class YAMLParser:
 
         return current
 
-    def append(self, data: dict) -> bool:
+    def append(self, data: dict|str, value: any = None) -> bool:
         """
         Append new data to the existing data in the YAML file.
+        Supports both dictionaries and dot notation for appending a single key.
 
         Args:
-            data (dict): The data to be appended to the YAML file.
+            data (dict|str): The data to be appended to the YAML file, or a dot notation key.
+            value (any): The value to be appended if data is a dot notation key.
 
         Returns:
             bool: True if the data was successfully appended, False otherwise.
         """
         try:
-            if not isinstance(data, dict):
-                raise ValueError("Input data must be a dictionary.")
-            current_data = self.read() or {}
+            current_data = self.read() or OrderedDict()
 
-            # Check for overlapping keys
-            overlapping_keys = current_data.keys() & data.keys()
-            if overlapping_keys:
-                for key in overlapping_keys:
-                    if current_data[key] != data[key]:
-                        print(f"---------------------------{len(key) * '-'}")
-                        print(f"Conflict detected for key '{key}':")
-                        print(f"  1. Current value: {current_data[key]}")
-                        print(f"  2. New value: {data[key]}")
-                        choice = input("Choose the value to keep (1 or 2): ")
-                        print(f"---------------------------{len(key) * '-'}")
-                        if choice == '2':
-                            current_data[key] = data[key]
-            else:
+            if isinstance(data, dict):
+                # Convert current_data to OrderedDict to maintain order
+                current_data = OrderedDict(current_data)
                 # Merge the new data with the existing data
-                current_data.update(data)
+                for key, val in data.items():
+                    current_data[key] = val
+            elif isinstance(data, str) and value is not None:
+                # Handle dot notation key
+                key_parts = data.split('.')
+                current = current_data
+
+                for part in key_parts[:-1]:
+                    if part not in current or not isinstance(current[part], dict):
+                        current[part] = OrderedDict()
+                    current = current[part]
+
+                current[key_parts[-1]] = value
+            else:
+                raise ValueError("Invalid input: data must be a dictionary or a dot notation key with a value.")
 
             with open(self.file_path, 'w') as file:
-                yaml.safe_dump(current_data, file, default_flow_style=False)
+                yaml.safe_dump(current_data, file, default_flow_style=False, sort_keys=False)
             return True
         except Exception as e:
             print(f"Error appending data to {os.path.basename(self.file_path)}: {e}")

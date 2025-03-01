@@ -2,7 +2,8 @@ import argparse
 import os
 from dotenv import load_dotenv
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, POST_COOLIFY_INSTALL_MSG, Emojis, VPSCommands, LinodeStatus
+from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, POST_COOLIFY_INSTALL_MSG, COOLIFY_API_TOKEN_ENV_VAR, DEFAULT_COOLIFY_PORT
+from saasFactory.utils.globals import Emojis, VPSCommands, LinodeStatus, CoolifyKeys
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
@@ -81,16 +82,22 @@ def main():
         "install", help="Install coolify on a VPS"
     )
 
-
-
-
-    # `delete` command
-    delete_parser = subparsers.add_parser(
-        "delete", help="Delete an existing saasFactory project"
+    coolify_synth_parser = coolify_subparser.add_parser(
+        "synth", help="Sythesize a new Coolify instance config"
     )
-    delete_parser.add_argument(
-        "--force", action="store_true", help="Force deletion without confirmation"
+    coolify_synth_parser.add_argument(
+        "--api_token", type=str, help="Coolify API Token",
+        required=False
     )
+    coolify_synth_parser.add_argument(
+        "--domain", action='store_true', help="Flag to indicate if a domain should be used for the Coolify instance connection",
+        required=False
+    )
+    coolify_synth_parser.add_argument(
+        "--https", action='store_true', help="Flag to indicate if HTTPS should be used for the Coolify instance connection",
+        required=False
+    )
+#---------------------------------------------------------------------------------------------------------
     args = parser.parse_args()
 
 
@@ -109,8 +116,9 @@ def main():
     elif args.command == "coolify":
         if args.coolify_command == "install":
             handle_coolify_install(args)
-    elif args.command == "delete":
-        handle_delete(args)
+        elif args.coolify_command == "synth":
+            handle_coolify_synth(args)
+
 
 
 def handle_init(args):
@@ -254,23 +262,61 @@ def handle_coolify_install(args):
     
     print(f"{Emojis.STAR.value} Coolify Installation Successful.")
     ssh_con.disconnect()
-    print(POST_COOLIFY_INSTALL_MSG)
+    # prompt user to run manual commands to sign into coolify ...
+    print(POST_COOLIFY_INSTALL_MSG)    
 
-                            
+def handle_coolify_synth(args):
+    if findProjectRoot() is None:
+        root_dir_error_msg()
+        return
+    use_domain = args.domain #if true use domain instead of IP
+    use_https = args.https #if true use https instead of http
+    omit_port = False
+    # get API token either from command args or from user input and add to .env
+    coolify_api_token = args.api_token if args.api_token is not None else get_api_token_cli(provider="Coolify")
+    # add the Coolify API token to the .env file
+    if(not addEnvVar(COOLIFY_API_TOKEN_ENV_VAR, coolify_api_token)):
+        return
+    
+    config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
+    if not os.path.exists(config_file):
+        print(f"{Emojis.ERROR_SIGN.value} Project configuration file not found.")
+        return
+    sf_config_parser = YAMLParser(config_file)
+
+    # if use domain true ask for domain
+    if use_domain:
+        endpoint = input("Please enter the domain name for the Coolify instance endpoint: ")
+    else:
+        endpoint = sf_config_parser.get(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
+    #ask to use default port or specify a port
+    use_default_port = yes_no_prompt("Would you like to use the default port for the Coolify instance?", additional_text=f"Default Port: {DEFAULT_COOLIFY_PORT}")
+    if use_default_port:
+        port = DEFAULT_COOLIFY_PORT
+    else:
+        port = input("Please enter the port number to connect to your Coolify instance (Press `Enter` to omit port): ")
+        if not port:
+            omit_port = True
+
+    coolify_configs = {
+        CoolifyKeys.COOLIFY_USE_DOMAIN_KEY.value: use_domain,
+        CoolifyKeys.COOLIFY_DOMAIN_KEY.value: endpoint,
+        CoolifyKeys.COOLIFY_USE_HTTPS_KEY.value: use_https,
+        CoolifyKeys.COOLIFY_OMIT_PORT_KEY.value: omit_port
+    }
+    if not omit_port:
+        coolify_configs[CoolifyKeys.COOLIFY_PORT_KEY.value] = port #adds port to configs if not omitted
+    if not sf_config_parser.append(list_to_dot_notation([CoolifyKeys.COOLIFY_CONFIGS_KEY.value]), coolify_configs):
+        print(f"{Emojis.ERROR_SIGN.value} Coolify Configuration Failure.")
+        return
+    
+    #attempt to connect to coolify instance
+    print(f"{Emojis.CHECK_MARK.value} Attempting to connect to the Coolify instance.")
+    print(f"\n{Emojis.STAR.value} Coolify instance configuration successful!\n")
 
     
-    # prompt user to run manual commands to sign into coolify ...
-
-
-def handle_delete(args):
-    if args.force:
-        print("Deleting project forcefully.")
-    else:
-        confirmation = input("Are you sure you want to delete the project? (y/n): ")
-        if confirmation.lower() == 'y':
-            print("Deleting project.")
-        else:
-            print("Deletion cancelled.")
+        
+    
 
 
 if __name__ == "__main__":
