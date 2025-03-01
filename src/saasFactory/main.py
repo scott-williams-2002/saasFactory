@@ -7,6 +7,7 @@ from saasFactory.utils.globals import Emojis, VPSCommands, LinodeStatus, Coolify
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
+from saasFactory.coolify.coolify import CoolifyClient
 from tabulate import tabulate
 
 """
@@ -312,6 +313,8 @@ def handle_coolify_synth(args):
     
     #attempt to connect to coolify instance
     print(f"{Emojis.CHECK_MARK.value} Attempting to connect to the Coolify instance.")
+    coolify_client = CoolifyClient(coolify_api_token)
+    coolify_client.test_connection()
     print(f"\n{Emojis.STAR.value} Coolify instance configuration successful!\n")
 
     

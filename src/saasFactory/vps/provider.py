@@ -260,7 +260,8 @@ class LinodeProvider(VPSProvider):
         
     def create_instance(self) -> None:
         """
-        Create a Linode VPS instance with the configured parameters pulled from the CONFIG_FILE_NAME file."""
+        Create a Linode VPS instance with the configured parameters pulled from the CONFIG_FILE_NAME file.
+        """
         project_root = findProjectRoot()
         if project_root is None:
             root_dir_error_msg()
