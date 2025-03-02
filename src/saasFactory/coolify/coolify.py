@@ -119,6 +119,29 @@ class CoolifyClient:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create project '{project_name}': {e}")
             return False
         
+    def list_projects(self) -> list[dict]:
+        """
+        Lists all projects on Coolify.
+
+        Returns:
+            list[str]: A list of project dictionaries.
+        """
+        try:
+            self.connect()
+            res = self.coolify_client.projects.list()
+            if res.status_code ==  200 or res.status_code == 201:
+                projects = res.data #list of project objects
+                return [{
+                    CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value: project.name, 
+                    CoolifyKeys.COOLIFY_PROJECT_UUID_KEY.value: project.uuid} 
+                    for project in projects]
+            else:
+                print(f"{Emojis.ERROR_SIGN.value} Failed to list projects.")
+                return []
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to list projects: {e}")
+            return []
+        
     def connect_github(self, project_name: str = None) -> None:
         """
         Connects to the user's GitHub account. Look at projects in config yaml and ask which to associate to if not chosen.
