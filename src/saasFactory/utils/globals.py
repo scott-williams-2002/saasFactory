@@ -33,6 +33,10 @@ class CoolifyKeys(Enum):
     COOLIFY_USE_HTTPS_KEY = "use_https" #boolean value
     COOLIFY_PORT_KEY = "port"
     COOLIFY_OMIT_PORT_KEY = "omit_port"
+    COOLIFY_PROJECTS_PARENT_KEY = "projects" #parent key - since there can be multiple projects on one coolify instance
+    COOLIFY_PROJECT_NAME_KEY = "name"
+    COOLIFY_PROJECT_DESCRIPTION_KEY = "description"
+    COOLIFY_PROJECT_ID_KEY = "id"
 
 
 #Configurations Raw:
@@ -43,6 +47,8 @@ DEFAULT_LINODE_VPS_CONFIG = {
 }
 DEFAULT_LINODE_USERNAME = "root"
 DEFAULT_COOLIFY_PORT = 8000
+DEFAULT_COOLIFY_PROJECT_NAME = "sfy-coolify-project"
+DEFAULT_COOLIFY_DESCRIPTION = "A project created by saasFactory CLI."
 
 #Configurations Text Formatted:
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])

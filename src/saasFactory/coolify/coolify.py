@@ -1,7 +1,8 @@
-from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg
+from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_prompt
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
-from saasFactory.utils.globals import CoolifyKeys
+from saasFactory.utils.globals import CoolifyKeys, Emojis
+from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION
 from coolipy import Coolipy
 import os
 #from coolipy import Coolipy
@@ -12,21 +13,21 @@ import os
 class CoolifyClient:
     def __init__(self, api_key):
         self.api_key = api_key
-
-    def connect(self) -> None:
-        """
-        Grabs Coolify configuration from the user's YAML file. Then creates a Coolify client object.
-        """
         project_root = findProjectRoot()
         if project_root is None:
             root_dir_error_msg()
             return
         config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
-        sf_config_parser = YAMLParser(config_file_path)
+        self.sf_config_parser = YAMLParser(config_file_path)
 
-        coolify_configs = sf_config_parser.get(CoolifyKeys.COOLIFY_CONFIGS_KEY.value)
+    def connect(self) -> None:
+        """
+        Grabs Coolify configuration from the user's YAML file. Then creates a Coolify client object.
+        """
+
+        coolify_configs = self.sf_config_parser.get(CoolifyKeys.COOLIFY_CONFIGS_KEY.value)
         if coolify_configs is None:
-            print("Coolify configurations not found in the config file.")
+            print(f"{Emojis.WARNING_SIGN.value} Coolify configurations not found in the config file.")
             return
         try:
             coolify_endpoint = coolify_configs.get(CoolifyKeys.COOLIFY_DOMAIN_KEY.value)
@@ -49,23 +50,80 @@ class CoolifyClient:
                     http_protocol="https" if use_https else "http",
                 )
         except Exception as e:
-            print(f"Failed to create Coolify client: {e}")
+            print(f"{Emojis.ERROR_SIGN.value} Failed to create Coolify client: {e}")
     def test_connection(self) -> bool: 
         """
         Tests the connection to the Coolify API.
+
+        Returns:
+            bool: True if the connection was successful, False otherwise.
         """
         try:
             self.connect()
             list_servers_res = self.coolify_client.servers.list()
             if list_servers_res.status_code == 200 or list_servers_res.status_code == 201:
-                print(f"Successfully connected to Coolify API. Status code: {list_servers_res.status_code}")
+                print(f"{Emojis.STAR.value} Successfully connected to Coolify API. Status code: {list_servers_res.status_code}")
                 return True
             else:
-                print("Failed to connect to Coolify API.")
+                print(f"{Emojis.ERROR_SIGN.value} Failed to connect to Coolify API.")
                 return False
         except Exception as e:
-            print(f"Failed to connect to Coolify API: {e}")
+            print(f"{Emojis.ERROR_SIGN.value} Failed to connect to Coolify API: {e}")
             return False
+        
+    def create_project(self, project_name: str = None, project_description: str = None) -> bool:
+        """
+        Creates a project on Coolify.
+
+        Args:
+            project_name (str): The name of the project.
+            project_description (str): The description of the project.
+        
+        Returns:
+            bool: True if the project was created successfully, False otherwise. Still returns True if project created but failed to update the config file.
+        """
+        if project_name is None:
+            use_default_name = yes_no_prompt(f"Use default Coolify project name '{DEFAULT_COOLIFY_PROJECT_NAME}'?")
+            if use_default_name:
+                project_name = DEFAULT_COOLIFY_PROJECT_NAME
+            else:
+                project_name = input("Specify your Coolify project name: ")
+        if project_description is None:
+            use_default_desc = yes_no_prompt(f"Use default Coolify project description '{DEFAULT_COOLIFY_DESCRIPTION}'?")
+            if use_default_desc:
+                project_description = DEFAULT_COOLIFY_DESCRIPTION
+            else:
+                project_description = input("Specify your Coolify project description: ")
+        try:
+            self.connect()
+            res = self.coolify_client.projects.create(project_name=project_name, project_description=project_description)
+            if res.status_code == 201 or res.status_code == 200:
+                append_res = self.sf_config_parser.append(
+                    list_to_dot_notation([CoolifyKeys.COOLIFY_CONFIGS_KEY.value, CoolifyKeys.COOLIFY_PROJECTS_PARENT_KEY.value]),
+                    [{
+                        CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value: project_name,
+                        CoolifyKeys.COOLIFY_PROJECT_DESCRIPTION_KEY.value: project_description,
+                        CoolifyKeys.COOLIFY_PROJECT_ID_KEY.value: res.data.id
+                    }]
+                )
+                if not append_res:
+                    print(f"{Emojis.ERROR_SIGN.value} Failed to update the config file.")
+                    print("Please manually update the config file with the project ID, name, and description.")
+
+                print(f"{Emojis.STAR.value} Successfully created project '{project_name}' and updated configs.")
+                return True
+            else:
+                print(f"{Emojis.ERROR_SIGN.value} Failed to create project '{project_name}'.")
+                return False
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to create project '{project_name}': {e}")
+            return False
+        
+    def connect_github(self, project_name: str = None) -> None:
+        """
+        Connects to the user's GitHub account. Look at projects in config yaml and ask which to associate to if not chosen.
+        """
+        pass
 
 #figure out  not having coolipy recognized as a module
 

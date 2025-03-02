@@ -98,6 +98,26 @@ def main():
         "--https", action='store_true', help="Flag to indicate if HTTPS should be used for the Coolify instance connection",
         required=False
     )
+
+    coolify_project_create_parser = coolify_subparser.add_parser(   
+        "project_create", help="Create a Coolify project"
+    )
+    coolify_project_create_parser.add_argument(
+        "--name", type=str, help="Name of the project",
+        required=False
+    )
+    coolify_project_create_parser.add_argument(
+        "--description", type=str, help="Description of the project",
+        required=False
+    )
+
+    coolify_github_connect_parser = coolify_subparser.add_parser(
+        "github_connect", help="Connect a GitHub repository to a Coolify project"
+    )
+    coolify_github_connect_parser.add_argument(
+        "--access_token", type=str, help="GitHub Access Token",
+        required=False
+    )
 #---------------------------------------------------------------------------------------------------------
     args = parser.parse_args()
 
@@ -119,6 +139,10 @@ def main():
             handle_coolify_install(args)
         elif args.coolify_command == "synth":
             handle_coolify_synth(args)
+        elif args.coolify_command == "project_create":
+            handle_coolify_project_create(args)
+        elif args.coolify_command == "github_connect":
+            handle_coolify_github_connect(args)
 
 
 
@@ -317,7 +341,19 @@ def handle_coolify_synth(args):
     coolify_client.test_connection()
     print(f"\n{Emojis.STAR.value} Coolify instance configuration successful!\n")
 
-    
+def handle_coolify_project_create(args):
+    if findProjectRoot() is None:
+        root_dir_error_msg()
+        return
+    print(f"{Emojis.SOON.value} Creating a new Coolify project.")
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    coolify_client = CoolifyClient(os.environ[COOLIFY_API_TOKEN_ENV_VAR])
+    coolify_client.test_connection()
+    coolify_client.create_project(project_name=args.name, project_description=args.description)
+
+
+def handle_coolify_github_connect(args):
+    pass
         
     
 
