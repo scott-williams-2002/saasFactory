@@ -36,7 +36,7 @@ class CoolifyKeys(Enum):
     COOLIFY_PROJECTS_PARENT_KEY = "projects" #parent key - since there can be multiple projects on one coolify instance
     COOLIFY_PROJECT_NAME_KEY = "name"
     COOLIFY_PROJECT_DESCRIPTION_KEY = "description"
-    COOLIFY_PROJECT_ID_KEY = "id"
+    COOLIFY_PROJECT_UUID_KEY = "uuid"
 
 
 #Configurations Raw:

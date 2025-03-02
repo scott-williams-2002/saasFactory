@@ -103,12 +103,12 @@ class CoolifyClient:
                     [{
                         CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value: project_name,
                         CoolifyKeys.COOLIFY_PROJECT_DESCRIPTION_KEY.value: project_description,
-                        CoolifyKeys.COOLIFY_PROJECT_ID_KEY.value: res.data.id
+                        CoolifyKeys.COOLIFY_PROJECT_UUID_KEY.value: res.data.uuid
                     }]
                 )
                 if not append_res:
                     print(f"{Emojis.ERROR_SIGN.value} Failed to update the config file.")
-                    print("Please manually update the config file with the project ID, name, and description.")
+                    print("Please manually update the config file with the project UUID, name, and description.")
 
                 print(f"{Emojis.STAR.value} Successfully created project '{project_name}' and updated configs.")
                 return True

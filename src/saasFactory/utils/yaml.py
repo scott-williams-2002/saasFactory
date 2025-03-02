@@ -83,7 +83,11 @@ class YAMLParser:
                         current[part] = OrderedDict()
                     current = current[part]
 
-                current[key_parts[-1]] = value
+
+                if isinstance(value, list):
+                    current[key_parts[-1]] = current.get(key_parts[-1], []) + value
+                else:
+                    current[key_parts[-1]] = value
             else:
                 raise ValueError("Invalid input: data must be a dictionary or a dot notation key with a value.")
 
