@@ -348,12 +348,32 @@ def handle_coolify_project_create(args):
     print(f"{Emojis.SOON.value} Creating a new Coolify project.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
     coolify_client = CoolifyClient(os.environ[COOLIFY_API_TOKEN_ENV_VAR])
-    coolify_client.test_connection()
+    if not coolify_client.test_connection():
+        return 
     coolify_client.create_project(project_name=args.name, project_description=args.description)
+
+    # spend time researching coolify servers environments and firewalls
+
+    #now give option to continue configuring the project
+    # IE would you like to continue configuring the project (y/n)
+    # if yes, prompt user to connect a github repo (y/n)
+    # then ask if they want to contineu configuring the project (y/n)
+        # if yes then ask to add resources/services to the project 
+    # if no, print success message and exit
 
 
 def handle_coolify_github_connect(args):
-    pass
+    if findProjectRoot() is None:
+        root_dir_error_msg()
+        return
+    print(f"{Emojis.SOON.value} Creating a new GitHub Repo for your app and connecting it to your Coolify instance.")
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    coolify_client = CoolifyClient(os.environ[COOLIFY_API_TOKEN_ENV_VAR])
+    if not coolify_client.test_connection():
+        return
+    github_access_token = args.access_token if args.access_token is not None else get_api_token_cli(provider="GitHub", token_type="Access")
+    coolify_client.connect_github(github_access_token)
+    
         
     
 

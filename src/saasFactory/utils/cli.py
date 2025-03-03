@@ -228,13 +228,17 @@ def mb_to_gb(mb: int) -> int:
     """
     return mb // 1024
 
-def get_api_token_cli(provider: str) -> str:
+def get_api_token_cli(provider: str, token_type: str = "API") -> str:
     """
     Get the API token from user input.
+
+    Args:
+        provider (str): The provider for which the token is required.
+        token_type (str): The type of token required (default: "API").
     Returns:
         str: The API token entered by the user.
     """
-    api_token = input(f"Enter your {provider} API token: ")
+    api_token = input(f"Enter your {provider} {token_type} token: ")
     return api_token
 
 def root_dir_error_msg() -> None:

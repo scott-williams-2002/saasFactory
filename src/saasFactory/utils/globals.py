@@ -117,3 +117,11 @@ You can now continue with the following steps to complete your setup:
 3. Run `sfy coolify telegram_connect` to connect a Telegram bot to your Coolify dashboard for notifications.
 4. Run `sfy coolify resource` to create and interact with resources in coolify dashboard.
 """
+
+
+
+#github stuff
+class GitHubRepos(Enum):
+    SAAS_STARTER = "https://github.com/nextjs/saas-starter.git"
+    SAAS_STARTER2 = "https://github.com/nextjsfd/saas-starter.git"
+    SAAS_STARTER3 = "https://github.com/ddnextjs/saas-starter.git"

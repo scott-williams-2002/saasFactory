@@ -1,9 +1,11 @@
-from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_prompt
+from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_prompt, get_user_choice
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
-from saasFactory.utils.globals import CoolifyKeys, Emojis
+from saasFactory.utils.globals import CoolifyKeys, Emojis, GitHubRepos
 from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION
+from saasFactory.github.github_client import GitHubRepoClient
 from coolipy import Coolipy
+from tabulate import tabulate
 import os
 #from coolipy import Coolipy
 #from coolipy.models.service import ServiceModelCreate, ServiceModel
@@ -62,7 +64,7 @@ class CoolifyClient:
             self.connect()
             list_servers_res = self.coolify_client.servers.list()
             if list_servers_res.status_code == 200 or list_servers_res.status_code == 201:
-                print(f"{Emojis.STAR.value} Successfully connected to Coolify API. Status code: {list_servers_res.status_code}")
+                print(f"{Emojis.CHECK_MARK.value} Successfully connected to Coolify API. Status code: {list_servers_res.status_code}")
                 return True
             else:
                 print(f"{Emojis.ERROR_SIGN.value} Failed to connect to Coolify API.")
@@ -142,13 +144,25 @@ class CoolifyClient:
             print(f"{Emojis.ERROR_SIGN.value} Failed to list projects: {e}")
             return []
         
-    def connect_github(self, project_name: str = None) -> None:
+    def connect_github(self, github_access_token: str) -> None:
         """
         Connects to the user's GitHub account. Look at projects in config yaml and ask which to associate to if not chosen.
         """
-        pass
+        #list project choices from globals - refine later
+        premade_repo_choices = "Premade repos:\n" + tabulate([[repo.name, repo.value] for repo in GitHubRepos])
+        use_premade = yes_no_prompt("Use a premade GitHub repository?", additional_text=premade_repo_choices)
 
-#figure out  not having coolipy recognized as a module
+        if use_premade:
+            repos_list  = [[str(i), repo.name, repo.value] for i, repo in enumerate(GitHubRepos)]
+            repo_choice = get_user_choice(repos_list, use_table=True, table_headers=["#", "Name", "Link"])
+            chosen_repo_url = repos_list[repo_choice][2]
+        else:
+            chosen_repo_url = input("Enter the URL of the GitHub repository you want to associate with Coolify: ")
+        try:
+            self.github_client = GitHubRepoClient(github_access_token) #<<<<<<<<<<<<<<<<<<<<<<< havent tested this yet
+            self.github_client.clone_repo(chosen_repo_url, os.getcwd())
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to connect to GitHub: {e}")
 
 #start by creating a deployment key, then prompting the user to add it to their github repo, 
 #  then creating a project from dockerfile with dev and prod envs 
