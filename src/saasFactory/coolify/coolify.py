@@ -1,3 +1,4 @@
+from base64 import b64encode
 from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_prompt, get_user_choice
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
@@ -5,8 +6,12 @@ from saasFactory.utils.globals import CoolifyKeys, Emojis, GitHubRepos
 from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION
 from saasFactory.github.github_client import GitHubRepoClient
 from coolipy import Coolipy
+from coolipy.models.private_keys import PrivateKeysModelCreate
+from coolipy.models.resources import ResourceModel
 from tabulate import tabulate
 import os
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, PublicFormat
 #from coolipy import Coolipy
 #from coolipy.models.service import ServiceModelCreate, ServiceModel
 
@@ -144,6 +149,100 @@ class CoolifyClient:
             print(f"{Emojis.ERROR_SIGN.value} Failed to list projects: {e}")
             return []
         
+    def create_deploy_key(self, project_uuid: str) -> str:
+        """
+        Creates a deployment key for a project on Coolify.
+
+        Args:
+            project_uuid (str): The UUID of the project.
+
+        Returns:
+            str: The public key of the deployment key.
+        """
+        try:
+            private_key = ed25519.Ed25519PrivateKey.generate()
+            private_bytes = private_key.private_bytes(
+                encoding=Encoding.PEM,
+                format=PrivateFormat.OpenSSH,
+                encryption_algorithm=NoEncryption()
+            )
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to generate private key: {e}")
+
+        encoded_key = b64encode(private_bytes).decode("utf-8")
+        key_title = "github_deploy_key"
+
+        try:
+            self.connect()
+            res = self.coolify_client.private_keys.create(private_key=PrivateKeysModelCreate(
+                description="Deployment key for GitHub",
+                name=key_title,
+                private_key=encoded_key
+            )) 
+            if res.status_code == 201 or res.status_code == 200:
+                print(f"{Emojis.CHECK_MARK.value} Successfully created deployment key for project '{project_uuid}'.")
+
+                self.key_uuid = res.data[CoolifyKeys.COOLIFY_PKEY_UUID_KEY.value]
+                return private_key.public_key().public_bytes(Encoding.OpenSSH, PublicFormat.OpenSSH).decode("utf-8")
+            else:
+                print(f"{Emojis.ERROR_SIGN.value} Failed to create deployment key for project '{project_uuid}'.")
+                return None
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to create deployment key for project '{project_uuid}': {e}")
+            return None
+        
+    def create_git_resource(self, project_uuid: str, source_url: str) -> bool:
+        """
+        Creates a git resource for a project on Coolify.
+        
+        Args:
+            project_uuid (str): The UUID of the project.
+            source_url (str): The URL of the git repository.
+            private (bool): Whether the repository is private. (default is True)
+            
+        Returns:
+            bool: True if the git resource was created successfully, False otherwise.
+        """
+        try:
+            #from coolipy.models.applications import ApplicationPrivateGHModelCreate
+            #from coolipy.constants import COOLIFY_BUILD_PACKS
+            #
+            #app_data = ApplicationPrivateGHModelCreate(
+            #    project_uuid="your_project_uuid",
+            #    server_uuid="your_server_uuid",
+            #    environment_name="production",
+            #    ports_exposes="8080",
+            #    github_app_uuid="your_github_app_uuid",
+            #    git_repository="your_github_repo",
+            #    git_branch="main",
+            #    build_pack=COOLIFY_BUILD_PACKS.dockerfile,
+            #    instant_deploy=True,
+            #    name="MyApp"
+            #)
+            #
+            #new_app = coolify_client.applications.create(app_data)
+            self.connect()
+            res = self.coolify_client.resources.create(ResourceModel(
+                name="GitHub_connection",
+                type="git",
+                private_key_id=self.key_id,
+                repository_project_id=project_uuid,
+                git_full_url=source_url,
+                build_pack = "Dockerfile",
+                dockerfile_location="/Dockerfile",
+                base_directory="/",
+                ports_exposes="3000"
+            ))
+            if res.status_code == 201 or res.status_code == 200:
+                print(f"{Emojis.CHECK_MARK.value} Successfully created git resource for project '{project_uuid}'.")
+                return True
+            else:
+                print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource for project '{project_uuid}'.")
+                return False
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource for project '{project_uuid}': {e}")
+            return False
+        
     def connect_github(self, github_access_token: str) -> None:
         """
         Connects to the user's GitHub account. Look at projects in config yaml and ask which to associate to if not chosen.
@@ -158,11 +257,39 @@ class CoolifyClient:
             chosen_repo_url = repos_list[repo_choice][2]
         else:
             chosen_repo_url = input("Enter the URL of the GitHub repository you want to associate with Coolify: ")
+
+        #list projects on coolify
+        projects = self.list_projects() # returns a list of dicts with project name and uuid
+        chosen_project_idx = get_user_choice([[i, project[CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value]] for i, project in enumerate(projects)], use_table=True, table_headers=["#", "Project Name"])
+        chosen_project_uuid = projects[chosen_project_idx][CoolifyKeys.COOLIFY_PROJECT_UUID_KEY.value]
+        pub_key = self.create_deploy_key(chosen_project_uuid)
+
         try:
             self.github_client = GitHubRepoClient(github_access_token) #<<<<<<<<<<<<<<<<<<<<<<< havent tested this yet
-            self.github_client.clone_repo(chosen_repo_url, os.getcwd())
+            clone_path = "frontend"
+            repo_name = "coolify_repo_github"
+            self.github_client.clone_repo(chosen_repo_url, os.path.join(os.getcwd(), clone_path))
+            self.github_client.create_private_repo(repo_name)
+            self.github_client.push_to_repo(clone_path, repo_name)
+
+
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to connect to GitHub: {e}")
+            return
+        
+        # connect to github and add deploy key
+        if not self.github_client.add_deploy_keys("coolify_deploy_key", pub_key):
+            print(f"{Emojis.ERROR_SIGN.value} Failed to add deploy key to GitHub repository.")
+            return
+        
+        # add a source to coolify project
+        try:
+            self.create_git_resource(chosen_project_uuid, self.github_client.get_repo_url()) # repo url is the one i own not the public one so need the newly created one
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource: {e}")
+            return
+        
+
 
 #start by creating a deployment key, then prompting the user to add it to their github repo, 
 #  then creating a project from dockerfile with dev and prod envs 

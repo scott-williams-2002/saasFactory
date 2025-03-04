@@ -19,6 +19,7 @@ class GitHubRepoClient():
     def create_private_repo(self, repo_name: str) -> bool:
         try:
             self.new_repo = self.github_client.get_user().create_repo(repo_name, private=True)
+            self.new_repo_url = self.new_repo.url
             return True
         except Exception as e:
             print(f"Failed to create private repository: {e}")
@@ -32,20 +33,24 @@ class GitHubRepoClient():
             remote_url = f"https://{user_login}:{self.gh_token}@github.com/{user_login}/{repo_name}.git"
             
             # Remove existing remote origin if it exists
-            subprocess.run(["git", "remote", "remove", "origin"], cwd=repo_path, check=False)
+            subprocess.run(["git", "remote", "remove", "origin"], cwd=repo_path, check=False, timeout=10)
             
-            subprocess.run(["git", "remote", "add", "origin", remote_url], cwd=repo_path)
-            subprocess.run(["git", "add", "."], cwd=repo_path)
-            subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=repo_path)
-            subprocess.run(["git", "branch", "-M", "main"], cwd=repo_path)
-            subprocess.run(["git", "push", "-u", "origin", "main"], cwd=repo_path)
+            subprocess.run(["git", "remote", "add", "origin", remote_url], cwd=repo_path, timeout=10)
+            subprocess.run(["git", "add", "."], cwd=repo_path, timeout=10)
+            subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=repo_path, timeout=10)
+            subprocess.run(["git", "branch", "-M", "main"], cwd=repo_path, timeout=10)
+            subprocess.run(["git", "push", "-u", "origin", "main"], cwd=repo_path, timeout=10)
             return True
+        except subprocess.TimeoutExpired as e:
+            print(f"Command timed out: {e}")
+            return False
         except Exception as e:
             print(f"Failed to push to repository: {e}")
             return False
-        
-        #add some stuff to remove the .git folder and readme then do git init and git add . and git commit -m "Initial commit" and git push -u origin main
-        
+
+    def get_repo_url(self) -> str:
+        return self.new_repo_url
+
     def add_deploy_keys(self, key_title: str, key: str) -> bool:
         try:
             self.new_repo.create_key(key_title, key)
@@ -54,7 +59,12 @@ class GitHubRepoClient():
             print(f"Failed to add deploy key: {e}")
             return False
 
-
+    def push_deploy(self):
+        """
+        Pushes the project git repo to github and makes an api call to pull the repo on Coolify
+        """
+        pass 
+        
 # Example usage
 #gh_client = GitHubRepoClient(str(input("Enter your GitHub access token: ")))
 #repo_url = str(input("Enter the URL of the repository you want to clone: "))

@@ -1,7 +1,7 @@
 import argparse
 import os
 from dotenv import load_dotenv
-from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg
+from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg, get_user_choice
 from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, POST_COOLIFY_INSTALL_MSG, COOLIFY_API_TOKEN_ENV_VAR, DEFAULT_COOLIFY_PORT
 from saasFactory.utils.globals import Emojis, VPSCommands, LinodeStatus, CoolifyKeys
 from saasFactory.vps.provider import LinodeProvider
@@ -373,6 +373,7 @@ def handle_coolify_github_connect(args):
         return
     github_access_token = args.access_token if args.access_token is not None else get_api_token_cli(provider="GitHub", token_type="Access")
     coolify_client.connect_github(github_access_token)
+
     
         
     

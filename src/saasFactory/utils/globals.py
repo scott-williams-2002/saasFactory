@@ -37,6 +37,7 @@ class CoolifyKeys(Enum):
     COOLIFY_PROJECT_NAME_KEY = "name"
     COOLIFY_PROJECT_DESCRIPTION_KEY = "description"
     COOLIFY_PROJECT_UUID_KEY = "uuid"
+    COOLIFY_PKEY_UUID_KEY = "uuid"
 
 
 #Configurations Raw:
