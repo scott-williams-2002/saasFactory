@@ -19,7 +19,6 @@ class GitHubRepoClient():
     def create_private_repo(self, repo_name: str) -> bool:
         try:
             self.new_repo = self.github_client.get_user().create_repo(repo_name, private=True)
-            self.new_repo_url = self.new_repo.url
             return True
         except Exception as e:
             print(f"Failed to create private repository: {e}")
@@ -31,6 +30,7 @@ class GitHubRepoClient():
         try:
             user_login = self.github_client.get_user().login
             remote_url = f"https://{user_login}:{self.gh_token}@github.com/{user_login}/{repo_name}.git"
+            self.new_repo_url = "git@github.com:" + user_login + "/" + repo_name + ".git"
             
             # Remove existing remote origin if it exists
             subprocess.run(["git", "remote", "remove", "origin"], cwd=repo_path, check=False, timeout=10)

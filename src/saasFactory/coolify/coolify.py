@@ -1,19 +1,23 @@
 from base64 import b64encode
+import json
 from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_prompt, get_user_choice
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.utils.globals import CoolifyKeys, Emojis, GitHubRepos
-from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION
+from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION, DEFAULT_COOLIFY_PORT
 from saasFactory.github.github_client import GitHubRepoClient
 from coolipy import Coolipy
 from coolipy.models.private_keys import PrivateKeysModelCreate
 from coolipy.models.resources import ResourceModel
+from coolipy.models.applications import ApplicationPublicPrivatePvtKeyGHModelCreate
+from coolipy.constants import COOLIFY_BUILD_PACKS
 from tabulate import tabulate
 import os
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, PublicFormat
 #from coolipy import Coolipy
 #from coolipy.models.service import ServiceModelCreate, ServiceModel
+import http.client
 
 
 
@@ -37,14 +41,14 @@ class CoolifyClient:
             print(f"{Emojis.WARNING_SIGN.value} Coolify configurations not found in the config file.")
             return
         try:
-            coolify_endpoint = coolify_configs.get(CoolifyKeys.COOLIFY_DOMAIN_KEY.value)
+            self.coolify_endpoint = coolify_configs.get(CoolifyKeys.COOLIFY_DOMAIN_KEY.value)
             omit_port = coolify_configs.get(CoolifyKeys.COOLIFY_OMIT_PORT_KEY.value)
             use_https = coolify_configs.get(CoolifyKeys.COOLIFY_USE_HTTPS_KEY.value)
             if not omit_port:
                 port = coolify_configs.get(CoolifyKeys.COOLIFY_PORT_KEY.value)
                 self.coolify_client = Coolipy(
                     coolify_api_key=self.api_key,
-                    coolify_endpoint=coolify_endpoint,
+                    coolify_endpoint=self.coolify_endpoint,
                     omit_port=omit_port,
                     http_protocol="https" if use_https else "http",
                     coolify_port=port
@@ -52,7 +56,7 @@ class CoolifyClient:
             else:
                 self.coolify_client = Coolipy(
                     coolify_api_key=self.api_key,
-                    coolify_endpoint=coolify_endpoint,
+                    coolify_endpoint=self.coolify_endpoint,
                     omit_port=omit_port,
                     http_protocol="https" if use_https else "http",
                 )
@@ -108,9 +112,9 @@ class CoolifyClient:
                 append_res = self.sf_config_parser.append(
                     list_to_dot_notation([CoolifyKeys.COOLIFY_CONFIGS_KEY.value, CoolifyKeys.COOLIFY_PROJECTS_PARENT_KEY.value]),
                     [{
-                        CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value: project_name,
+                        CoolifyKeys.COOLIFY_NAME_KEY.value: project_name,
                         CoolifyKeys.COOLIFY_PROJECT_DESCRIPTION_KEY.value: project_description,
-                        CoolifyKeys.COOLIFY_PROJECT_UUID_KEY.value: res.data.uuid
+                        CoolifyKeys.COOLIFY_UUID_KEY.value: res.data.uuid
                     }]
                 )
                 if not append_res:
@@ -139,14 +143,37 @@ class CoolifyClient:
             if res.status_code ==  200 or res.status_code == 201:
                 projects = res.data #list of project objects
                 return [{
-                    CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value: project.name, 
-                    CoolifyKeys.COOLIFY_PROJECT_UUID_KEY.value: project.uuid} 
+                    CoolifyKeys.COOLIFY_NAME_KEY.value: project.name, 
+                    CoolifyKeys.COOLIFY_UUID_KEY.value: project.uuid} 
                     for project in projects]
             else:
                 print(f"{Emojis.ERROR_SIGN.value} Failed to list projects.")
                 return []
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to list projects: {e}")
+            return []
+        
+    def list_servers(self) -> list[dict]:   
+        """
+        Lists servers on Coolify instance
+
+        Returns:
+            list[str]: A list of server dictionaries.
+        """
+        try:
+            self.connect()
+            res = self.coolify_client.servers.list()
+            if res.status_code ==  200 or res.status_code == 201:
+                servers = res.data
+                return [{
+                    "name": server.name,
+                    "uuid": server.uuid, 
+                } for server in servers]
+            else:
+                print(f"{Emojis.ERROR_SIGN.value} Failed to list servers.")
+                return []
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to list servers: {e}")
             return []
         
     def create_deploy_key(self, project_uuid: str) -> str:
@@ -182,7 +209,7 @@ class CoolifyClient:
             if res.status_code == 201 or res.status_code == 200:
                 print(f"{Emojis.CHECK_MARK.value} Successfully created deployment key for project '{project_uuid}'.")
 
-                self.key_uuid = res.data[CoolifyKeys.COOLIFY_PKEY_UUID_KEY.value]
+                self.key_uuid = res.data[CoolifyKeys.COOLIFY_UUID_KEY.value]
                 return private_key.public_key().public_bytes(Encoding.OpenSSH, PublicFormat.OpenSSH).decode("utf-8")
             else:
                 print(f"{Emojis.ERROR_SIGN.value} Failed to create deployment key for project '{project_uuid}'.")
@@ -191,7 +218,7 @@ class CoolifyClient:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create deployment key for project '{project_uuid}': {e}")
             return None
         
-    def create_git_resource(self, project_uuid: str, source_url: str) -> bool:
+    def create_git_resource(self, project_uuid: str, server_uuid: str, source_url: str) -> bool:
         """
         Creates a git resource for a project on Coolify.
         
@@ -222,18 +249,35 @@ class CoolifyClient:
             #
             #new_app = coolify_client.applications.create(app_data)
             self.connect()
-            res = self.coolify_client.resources.create(ResourceModel(
-                name="GitHub_connection",
-                type="git",
-                private_key_id=self.key_id,
-                repository_project_id=project_uuid,
-                git_full_url=source_url,
-                build_pack = "Dockerfile",
-                dockerfile_location="/Dockerfile",
-                base_directory="/",
-                ports_exposes="3000"
-            ))
-            if res.status_code == 201 or res.status_code == 200:
+            
+            conn = http.client.HTTPConnection(self.coolify_endpoint, DEFAULT_COOLIFY_PORT)
+
+
+            payload_dict = {
+                "project_uuid": project_uuid,
+                "server_uuid": server_uuid,
+                "environment_name": "production",
+                "private_key_uuid": self.key_uuid,
+                "git_repository": source_url,
+                "git_branch": "main",
+                "build_pack": "dockerfile",
+                "ports_exposes": "3000",
+                "git_commit_sha": "HEAD"
+            }
+            payload = json.dumps(payload_dict)
+            headers = {
+                'Authorization': f"Bearer {self.api_key}",
+                'Content-Type': "application/json"
+            }
+
+            conn.request("POST", "/api/v1/applications/private-deploy-key", payload, headers)
+
+            res = conn.getresponse()
+            data = res.read()
+
+            print(data.decode("utf-8"))
+            #print(res.data)
+            if res.status == 201 or res.status == 200:
                 print(f"{Emojis.CHECK_MARK.value} Successfully created git resource for project '{project_uuid}'.")
                 return True
             else:
@@ -260,9 +304,19 @@ class CoolifyClient:
 
         #list projects on coolify
         projects = self.list_projects() # returns a list of dicts with project name and uuid
-        chosen_project_idx = get_user_choice([[i, project[CoolifyKeys.COOLIFY_PROJECT_NAME_KEY.value]] for i, project in enumerate(projects)], use_table=True, table_headers=["#", "Project Name"])
-        chosen_project_uuid = projects[chosen_project_idx][CoolifyKeys.COOLIFY_PROJECT_UUID_KEY.value]
+        chosen_project_idx = get_user_choice([[i, project[CoolifyKeys.COOLIFY_NAME_KEY.value]] for i, project in enumerate(projects)], use_table=True, table_headers=["#", "Project Name"])
+        chosen_project_uuid = projects[chosen_project_idx][CoolifyKeys.COOLIFY_UUID_KEY.value]
         pub_key = self.create_deploy_key(chosen_project_uuid)
+
+        servers = self.list_servers()
+        if len(servers) == 0:
+            print(f"{Emojis.ERROR_SIGN.value} No servers found on Coolify. Please create a server first.")
+            return
+        if len(servers) == 0:
+            chosen_server_uuid = servers[0][CoolifyKeys.COOLIFY_UUID_KEY.value]
+        else:
+            chosen_server_idx = get_user_choice([[i, server[CoolifyKeys.COOLIFY_NAME_KEY.value]] for i, server in enumerate(servers)], use_table=True, table_headers=["#", "Server Name"])
+            chosen_server_uuid = servers[chosen_server_idx][CoolifyKeys.COOLIFY_UUID_KEY.value]
 
         try:
             self.github_client = GitHubRepoClient(github_access_token) #<<<<<<<<<<<<<<<<<<<<<<< havent tested this yet
@@ -284,7 +338,8 @@ class CoolifyClient:
         
         # add a source to coolify project
         try:
-            self.create_git_resource(chosen_project_uuid, self.github_client.get_repo_url()) # repo url is the one i own not the public one so need the newly created one
+            print(f"github url {self.github_client.get_repo_url()}")
+            self.create_git_resource(chosen_project_uuid, chosen_server_uuid, self.github_client.get_repo_url()) # repo url is the one i own not the public one so need the newly created one
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource: {e}")
             return
