@@ -15,20 +15,12 @@ from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.utils.globals import (
 SSH_KEY_DIR_NAME,
 VPS_ROOT_PASSWORD_ENV_VAR, 
-CONFIG_FILE_NAME, 
-VPS_CONFIGS_KEY, 
+CONFIG_FILE_NAME,  
 SSH_KEY_FILE_NAME,
-LINODE_IMAGE_KEY,
-LINODE_REGION_KEY,
-LINODE_TYPE_KEY,
-VPS_PROVIDER_KEY,
-LINODE_LABEL_KEY,
-VPS_PROJECT_NAME_KEY,
 LINODE_INSTANCE_PREFIX,
-LINODE_ID_KEY,
-LINODE_PUBLIC_IP_KEY,
 Emojis,
-LinodeStatus
+LinodeStatus,
+VPSKeys
 )
 from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt, root_dir_error_msg
 
@@ -212,11 +204,11 @@ class LinodeProvider(VPSProvider):
     
         if configsDict is not None:
             #add LINODE_INSTANCE_PREFIX to the label
-            project_name_config = sf_config_parser.get(VPS_PROJECT_NAME_KEY) if isinstance(sf_config_parser.get(VPS_PROJECT_NAME_KEY), str) else sf_config_parser.get(VPS_PROJECT_NAME_KEY)[VPS_PROJECT_NAME_KEY]
-            configsDict[LINODE_LABEL_KEY] = LINODE_INSTANCE_PREFIX + project_name_config
+            project_name_config = sf_config_parser.get(VPSKeys.VPS_PROJECT_NAME_KEY.value) if isinstance(sf_config_parser.get(VPSKeys.VPS_PROJECT_NAME_KEY.value), str) else sf_config_parser.get(VPSKeys.VPS_PROJECT_NAME_KEY.value)[VPSKeys.VPS_PROJECT_NAME_KEY.value]
+            configsDict[VPSKeys.LINODE_LABEL_KEY.value] = LINODE_INSTANCE_PREFIX + project_name_config
             default_configs = {
-                VPS_PROVIDER_KEY: "linode",
-                VPS_CONFIGS_KEY: configsDict
+                VPSKeys.VPS_PROVIDER_KEY.value: "linode",
+                VPSKeys.VPS_CONFIGS_KEY.value: configsDict
             }
             if not sf_config_parser.append(default_configs):
                 print("Error adding Linode configurations to sf_config.yaml file.")
@@ -239,18 +231,18 @@ class LinodeProvider(VPSProvider):
             type_choice_index = get_user_choice(type_format_options, use_table=True, table_headers=type_format_headers)
     
             print("Selected configurations:")
-            selected = [[LINODE_IMAGE_KEY, images[image_choice_index].id], [LINODE_REGION_KEY, regions[region_choice_index]], [LINODE_TYPE_KEY, types[type_choice_index]]]
+            selected = [[VPSKeys.LINODE_IMAGE_KEY.value, images[image_choice_index].id], [VPSKeys.LINODE_REGION_KEY.value, regions[region_choice_index]], [VPSKeys.LINODE_TYPE_KEY.value, types[type_choice_index]]]
             print(tabulate(selected, headers=["", "Selected"], tablefmt="fancy_grid"))
 
-            project_name_config = sf_config_parser.get(VPS_PROJECT_NAME_KEY) if isinstance(sf_config_parser.get(VPS_PROJECT_NAME_KEY), str) else sf_config_parser.get(VPS_PROJECT_NAME_KEY)[VPS_PROJECT_NAME_KEY]
+            project_name_config = sf_config_parser.get(VPSKeys.VPS_PROJECT_NAME_KEY.value) if isinstance(sf_config_parser.get(VPSKeys.VPS_PROJECT_NAME_KEY.value), str) else sf_config_parser.get(VPSKeys.VPS_PROJECT_NAME_KEY.value)[VPSKeys.VPS_PROJECT_NAME_KEY.value]
             
             new_configs = {
-                VPS_PROVIDER_KEY: "linode",
-                VPS_CONFIGS_KEY: {
-                    LINODE_IMAGE_KEY: images[image_choice_index].id,
-                    LINODE_REGION_KEY: regions[region_choice_index],
-                    LINODE_TYPE_KEY: types[type_choice_index].id,
-                    LINODE_LABEL_KEY: LINODE_INSTANCE_PREFIX + project_name_config
+                VPSKeys.VPS_PROVIDER_KEY.value: "linode",
+                VPSKeys.VPS_CONFIGS_KEY.value: {
+                    VPSKeys.LINODE_IMAGE_KEY.value: images[image_choice_index].id,
+                    VPSKeys.LINODE_REGION_KEY.value: regions[region_choice_index],
+                    VPSKeys.LINODE_TYPE_KEY.value: types[type_choice_index].id,
+                    VPSKeys.LINODE_LABEL_KEY.value: LINODE_INSTANCE_PREFIX + project_name_config
                 }
             }
             if not sf_config_parser.append(new_configs):
@@ -272,16 +264,16 @@ class LinodeProvider(VPSProvider):
         config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
         sf_config_parser = YAMLParser(config_file_path)
 
-        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY) #change to optional key for read
+        linode_configs = sf_config_parser.get(VPSKeys.VPS_CONFIGS_KEY.value) #change to optional key for read
         print(f"Linode Configurations: {linode_configs}")
         if linode_configs is None:
             print(f"{Emojis.ERROR_SIGN.value} No Linode configurations found.")
             return
         
-        image = linode_configs.get(LINODE_IMAGE_KEY)
-        region = linode_configs.get(LINODE_REGION_KEY)   
-        instance_type = linode_configs.get(LINODE_TYPE_KEY)
-        instance_label = linode_configs.get(LINODE_LABEL_KEY)
+        image = linode_configs.get(VPSKeys.LINODE_IMAGE_KEY.value)
+        region = linode_configs.get(VPSKeys.LINODE_REGION_KEY.value)   
+        instance_type = linode_configs.get(VPSKeys.LINODE_TYPE_KEY.value)
+        instance_label = linode_configs.get(VPSKeys.LINODE_LABEL_KEY.value)
 
         if image is None or region is None or instance_type is None or instance_label is None:
             print(f"{Emojis.ERROR_SIGN.value} Error reading Linode configurations.")
@@ -309,17 +301,17 @@ class LinodeProvider(VPSProvider):
             authorized_keys=[ssh_public_key]
         )
         print(f"{Emojis.STAR.value} Linode instance successfully created. Please wait a frew minutes for the intance to boot.")
-        instance_details = [[LINODE_LABEL_KEY, new_linode.label], [LINODE_PUBLIC_IP_KEY, new_linode.ipv4[0]], [LINODE_ID_KEY, new_linode.id]]
+        instance_details = [[VPSKeys.LINODE_LABEL_KEY.value, new_linode.label], [VPSKeys.LINODE_PUBLIC_IP_KEY.value, new_linode.ipv4[0]], [VPSKeys.LINODE_ID_KEY.value, new_linode.id]]
         print(tabulate(instance_details, headers=["", "Details"], tablefmt="fancy_grid"))
-        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
+        linode_configs = sf_config_parser.get(VPSKeys.VPS_CONFIGS_KEY.value)
         if isinstance(linode_configs, dict):
-            linode_configs[LINODE_ID_KEY] = new_linode.id
-            linode_configs[LINODE_PUBLIC_IP_KEY] = new_linode.ipv4[0]
-            sf_config_parser.remove(VPS_CONFIGS_KEY)
-        if( not sf_config_parser.append({VPS_CONFIGS_KEY: linode_configs})):
+            linode_configs[VPSKeys.LINODE_ID_KEY.value] = new_linode.id
+            linode_configs[VPSKeys.LINODE_PUBLIC_IP_KEY.value] = new_linode.ipv4[0]
+            sf_config_parser.remove(VPSKeys.VPS_CONFIGS_KEY.value)
+        if( not sf_config_parser.append({VPSKeys.VPS_CONFIGS_KEY.value: linode_configs})):
             print(f"{Emojis.ERROR_SIGN.value} Error adding Linode ID to {CONFIG_FILE_NAME} file.")
             print(f"Please add the following config to the {CONFIG_FILE_NAME} file manually:")
-            print(f"    '{LINODE_ID_KEY}: {new_linode.id}'")
+            print(f"    '{VPSKeys.LINODE_ID_KEY.value}: {new_linode.id}'")
             return
 
     
@@ -337,12 +329,12 @@ class LinodeProvider(VPSProvider):
         config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
         sf_config_parser = YAMLParser(config_file_path)
 
-        linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
+        linode_configs = sf_config_parser.get(VPSKeys.VPS_CONFIGS_KEY.value)
         if linode_configs is None:
             print(f"{Emojis.ERROR_SIGN.value} No Linode configurations found.")
             return 
         
-        instance_id = linode_configs.get(LINODE_ID_KEY)
+        instance_id = linode_configs.get(VPSKeys.LINODE_ID_KEY.value)
         if instance_id is None:
             print(f"{Emojis.ERROR_SIGN.value} Error reading Linode configurations.")
             return
@@ -370,11 +362,11 @@ class LinodeProvider(VPSProvider):
                 if os.path.exists(os.path.join(project_root, SSH_KEY_DIR_NAME)):
                     print(f"Removing {SSH_KEY_DIR_NAME} folder and its contents.")
                     shutil.rmtree(os.path.join(project_root, SSH_KEY_DIR_NAME))
-                    print(f"Removing {LINODE_ID_KEY} and {LINODE_PUBLIC_IP_KEY} from {CONFIG_FILE_NAME} file.")
-                    sf_config_parser.remove(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_ID_KEY]))
-                    sf_config_parser.remove(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
+                    print(f"Removing {VPSKeys.LINODE_ID_KEY.value} and {VPSKeys.LINODE_PUBLIC_IP_KEY.value} from {CONFIG_FILE_NAME} file.")
+                    sf_config_parser.remove(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_ID_KEY.value]))
+                    sf_config_parser.remove(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_PUBLIC_IP_KEY.value]))
             except Exception as e:
-                print(f"{Emojis.ERROR_SIGN.value} Error deleting SSH keys and/or {LINODE_ID_KEY} from {CONFIG_FILE_NAME} file. Error: {e}")
+                print(f"{Emojis.ERROR_SIGN.value} Error deleting SSH keys and/or {VPSKeys.LINODE_ID_KEY.value} from {CONFIG_FILE_NAME} file. Error: {e}")
                 return
             
         else:
@@ -400,8 +392,8 @@ class LinodeProvider(VPSProvider):
         try:
             config_file_path = os.path.join(project_root, CONFIG_FILE_NAME)
             sf_config_parser = YAMLParser(config_file_path)
-            linode_configs = sf_config_parser.get(VPS_CONFIGS_KEY)
-            instance_id = linode_configs.get(LINODE_ID_KEY)
+            linode_configs = sf_config_parser.get(VPSKeys.VPS_CONFIGS_KEY.value)
+            instance_id = linode_configs.get(VPSKeys.LINODE_ID_KEY.value)
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Error reading Linode configurations. Error: {e}")
             return None

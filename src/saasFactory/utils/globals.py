@@ -15,15 +15,16 @@ VPS_ROOT_PASSWORD_ENV_VAR = "VPS_ROOT_PASSWORD"
 COOLIFY_API_TOKEN_ENV_VAR = "COOLIFY_API_TOKEN"
 
 #Configurations Key VPS
-VPS_PROJECT_NAME_KEY = "project_name"
-VPS_PROVIDER_KEY = "provider"
-VPS_CONFIGS_KEY = "vps_configs" #parent key
-LINODE_IMAGE_KEY = "image"
-LINODE_REGION_KEY = "region"   
-LINODE_TYPE_KEY = "type"
-LINODE_LABEL_KEY = "label"
-LINODE_ID_KEY = "linode_id"
-LINODE_PUBLIC_IP_KEY = "public_ip"
+class VPSKeys(Enum):
+    VPS_PROJECT_NAME_KEY = "project_name"
+    VPS_PROVIDER_KEY = "provider"
+    VPS_CONFIGS_KEY = "vps_configs" #parent key
+    LINODE_IMAGE_KEY = "image"
+    LINODE_REGION_KEY = "region"   
+    LINODE_TYPE_KEY = "type"
+    LINODE_LABEL_KEY = "label"
+    LINODE_ID_KEY = "linode_id"
+    LINODE_PUBLIC_IP_KEY = "public_ip"
 
 #Configurations Key Coolify
 class CoolifyKeys(Enum):
