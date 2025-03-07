@@ -44,9 +44,9 @@ class CoolifyKeys(Enum):
 
 #Configurations Raw:
 DEFAULT_LINODE_VPS_CONFIG = {
-    LINODE_IMAGE_KEY: "linode/ubuntu24.04",
-    LINODE_REGION_KEY: "us-central",
-    LINODE_TYPE_KEY: "g6-standard-1"
+    VPSKeys.LINODE_IMAGE_KEY.value: "linode/ubuntu24.04",
+    VPSKeys.LINODE_REGION_KEY.value: "us-central",
+    VPSKeys.LINODE_TYPE_KEY.value: "g6-standard-1"
 }
 DEFAULT_LINODE_USERNAME = "root"
 DEFAULT_COOLIFY_PORT = 8000
