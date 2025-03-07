@@ -2,7 +2,8 @@ import os
 from typing import Optional
 from datetime import datetime
 from tabulate import tabulate
-from saasFactory.utils.globals import CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, Emojis
+from saasFactory.utils.globals import CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX
+from saasFactory.utils.enums import Emojis
 from saasFactory.utils.yaml import YAMLParser
 from dotenv import load_dotenv, set_key
 from pyfiglet import figlet_format

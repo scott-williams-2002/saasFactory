@@ -9,17 +9,23 @@ import os
 import shutil
 from tabulate import tabulate
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
+from saasFactory.utils.enums import Emojis, LinodeStatus, VPSKeys, EnvVarNames
 from saasFactory.utils.globals import (
-SSH_KEY_DIR_NAME, 
-CONFIG_FILE_NAME,  
-SSH_KEY_FILE_NAME,
-LINODE_INSTANCE_PREFIX,
-Emojis,
-LinodeStatus,
-VPSKeys,
-EnvVarNames
+    SSH_KEY_DIR_NAME, 
+    CONFIG_FILE_NAME,  
+    SSH_KEY_FILE_NAME,
+    LINODE_INSTANCE_PREFIX
 )
-from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt, root_dir_error_msg
+from saasFactory.utils.cli import (
+    findProjectRoot, 
+    addEnvVar, 
+    get_user_choice, 
+    mb_to_gb, 
+    yes_no_prompt, 
+    root_dir_error_msg
+)
+
+
 
 #abstract VPS class
 class VPSProvider:

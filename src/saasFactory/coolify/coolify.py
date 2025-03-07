@@ -3,20 +3,15 @@ import json
 from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_prompt, get_user_choice
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
-from saasFactory.utils.globals import CoolifyKeys, Emojis, GitHubRepos
+from saasFactory.utils.enums import CoolifyKeys, Emojis, GitHubRepos
 from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION, DEFAULT_COOLIFY_PORT
 from saasFactory.github.github_client import GitHubRepoClient
 from coolipy import Coolipy
 from coolipy.models.private_keys import PrivateKeysModelCreate
-from coolipy.models.resources import ResourceModel
-from coolipy.models.applications import ApplicationPublicPrivatePvtKeyGHModelCreate
-from coolipy.constants import COOLIFY_BUILD_PACKS
 from tabulate import tabulate
 import os
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, PublicFormat
-#from coolipy import Coolipy
-#from coolipy.models.service import ServiceModelCreate, ServiceModel
 import http.client
 
 

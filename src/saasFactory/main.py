@@ -1,14 +1,34 @@
 import argparse
 import os
 from dotenv import load_dotenv
-from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg, get_user_choice
-from saasFactory.utils.globals import DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE,DEFAULT_LINODE_USERNAME, POST_COOLIFY_INSTALL_MSG, DEFAULT_COOLIFY_PORT
-from saasFactory.utils.globals import Emojis, VPSCommands, LinodeStatus, CoolifyKeys, EnvVarNames, VPSKeys
+from saasFactory.utils.enums import Emojis, VPSCommands, LinodeStatus, CoolifyKeys, EnvVarNames, VPSKeys
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.coolify.coolify import CoolifyClient
 from tabulate import tabulate
+
+from saasFactory.utils.cli import (
+    createProjectDir, 
+    createEnvFile, 
+    createSFConfigFile, 
+    findProjectRoot, 
+    addEnvVar, 
+    get_api_token_cli, 
+    printWelcomeMessage, 
+    yes_no_prompt, 
+    printInitInstructions, 
+    root_dir_error_msg
+)
+from saasFactory.utils.globals import ( 
+    DEFAULT_LINODE_VPS_CONFIG, 
+    CONFIG_FILE_NAME, 
+    PROJECT_DIR_NAME_SUFFIX, 
+    DEFAULT_LINODE_VPS_CONFIG_TABLE,
+    DEFAULT_LINODE_USERNAME, 
+    POST_COOLIFY_INSTALL_MSG, 
+    DEFAULT_COOLIFY_PORT
+)
 
 
 def main():

@@ -1,13 +1,11 @@
 from paramiko import SSHClient, AutoAddPolicy, RSAKey
 from dotenv import load_dotenv
 import os
-
+from saasFactory.utils.enums import Emojis, EnvVarNames
 from saasFactory.utils.cli import root_dir_error_msg, findProjectRoot, print_with_underline
 from saasFactory.utils.globals import (
     SSH_KEY_DIR_NAME,
-    SSH_KEY_FILE_NAME,
-    Emojis,
-    EnvVarNames
+    SSH_KEY_FILE_NAME
 )
 
 class SSHConnection:
