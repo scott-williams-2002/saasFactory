@@ -10,9 +10,11 @@ SSH_KEY_FILE_NAME = "sfy_key"
 SSH_KEY_DIR_NAME = "ssh_keys"
 
 #Environment Variable Names:
-VPS_API_TOKEN_ENV_VAR = "VPS_API_TOKEN"
-VPS_ROOT_PASSWORD_ENV_VAR = "VPS_ROOT_PASSWORD"
-COOLIFY_API_TOKEN_ENV_VAR = "COOLIFY_API_TOKEN"
+class EnvVarNames(Enum):
+    """Environment variable names used in the CLI."""
+    VPS_API_TOKEN_ENV_VAR = "VPS_API_TOKEN"
+    VPS_ROOT_PASSWORD_ENV_VAR = "VPS_ROOT_PASSWORD"
+    COOLIFY_API_TOKEN_ENV_VAR = "COOLIFY_API_TOKEN"
 
 #Configurations Key VPS
 class VPSKeys(Enum):

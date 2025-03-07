@@ -4,10 +4,10 @@ import os
 
 from saasFactory.utils.cli import root_dir_error_msg, findProjectRoot, print_with_underline
 from saasFactory.utils.globals import (
-    VPS_ROOT_PASSWORD_ENV_VAR,
     SSH_KEY_DIR_NAME,
     SSH_KEY_FILE_NAME,
-    Emojis
+    Emojis,
+    EnvVarNames
 )
 
 class SSHConnection:
@@ -45,7 +45,7 @@ class SSHConnection:
         try:
             if self.key_encrypted:
                 load_dotenv(os.path.join(project_root, ".env"))
-                self.root_password = os.getenv(VPS_ROOT_PASSWORD_ENV_VAR)
+                self.root_password = os.getenv(EnvVarNames.VPS_ROOT_PASSWORD_ENV_VAR.value)
             else:
                 self.root_password = None
             self.private_key_path = os.path.join(project_root, SSH_KEY_DIR_NAME, SSH_KEY_FILE_NAME)

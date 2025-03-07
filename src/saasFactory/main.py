@@ -2,17 +2,14 @@ import argparse
 import os
 from dotenv import load_dotenv
 from saasFactory.utils.cli import createProjectDir, createEnvFile, createSFConfigFile, findProjectRoot, addEnvVar, get_api_token_cli, printWelcomeMessage, yes_no_prompt, printInitInstructions, root_dir_error_msg, get_user_choice
-from saasFactory.utils.globals import VPS_API_TOKEN_ENV_VAR, DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE, VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY,DEFAULT_LINODE_USERNAME, POST_COOLIFY_INSTALL_MSG, COOLIFY_API_TOKEN_ENV_VAR, DEFAULT_COOLIFY_PORT
-from saasFactory.utils.globals import Emojis, VPSCommands, LinodeStatus, CoolifyKeys
+from saasFactory.utils.globals import DEFAULT_LINODE_VPS_CONFIG, CONFIG_FILE_NAME, PROJECT_DIR_NAME_SUFFIX, DEFAULT_LINODE_VPS_CONFIG_TABLE,DEFAULT_LINODE_USERNAME, POST_COOLIFY_INSTALL_MSG, DEFAULT_COOLIFY_PORT
+from saasFactory.utils.globals import Emojis, VPSCommands, LinodeStatus, CoolifyKeys, EnvVarNames, VPSKeys
 from saasFactory.vps.provider import LinodeProvider
 from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.coolify.coolify import CoolifyClient
 from tabulate import tabulate
 
-"""
-EACH CLI Function has Error logging
-"""
 
 def main():
     parser = argparse.ArgumentParser(
@@ -174,7 +171,7 @@ def handle_vps_synth(args):
         # get API token either from command args or from user input and add to .env
         linode_api_token = args.api_token if args.api_token is not None else get_api_token_cli(provider="Linode")
         # add the Linode API token to the .env file
-        if(not addEnvVar(VPS_API_TOKEN_ENV_VAR, linode_api_token)):
+        if(not addEnvVar(EnvVarNames.VPS_API_TOKEN_ENV_VAR.value, linode_api_token)):
             return
         # create Linode VPS Provider Instance
         linVPS = LinodeProvider(linode_api_token)
@@ -213,7 +210,7 @@ def handle_vps_up(args):
 
     # create Linode VPS Provider Instance
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
-    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS = LinodeProvider(os.environ[EnvVarNames.VPS_API_TOKEN_ENV_VAR.value])
     linVPS.get_root_password()
     linVPS.create_instance()
 
@@ -228,7 +225,7 @@ def handle_vps_down(args):
         return
     print(f"{Emojis.CHECK_MARK.value} Config File Found. Destroying the VPS instance.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
-    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS = LinodeProvider(os.environ[EnvVarNames.VPS_API_TOKEN_ENV_VAR.value])
     linVPS.destroy_instance()
 
 
@@ -242,7 +239,7 @@ def handle_vps_status(args):
         return
     print(f"{Emojis.CHECK_MARK.value} Config File Found. Checking the VPS instance status.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
-    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS = LinodeProvider(os.environ[EnvVarNames.VPS_API_TOKEN_ENV_VAR.value])
     linVPS.check_instance_status(log_status=True)
 
 def handle_coolify_install(args):
@@ -255,7 +252,7 @@ def handle_coolify_install(args):
         return
     #check if the instance is running
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
-    linVPS = LinodeProvider(os.environ[VPS_API_TOKEN_ENV_VAR])
+    linVPS = LinodeProvider(os.environ[EnvVarNames.VPS_API_TOKEN_ENV_VAR.value])
     vps_status = linVPS.check_instance_status(log_status=False)
     if not vps_status == LinodeStatus.RUNNING.value:
         print(f"{Emojis.ERROR_SIGN.value} VPS instance is not running.")
@@ -263,7 +260,7 @@ def handle_coolify_install(args):
    
     print(f"{Emojis.CHECK_MARK.value} Attempting SSH connection to the VPS instance.")
     sf_config_parser = YAMLParser(config_file)
-    vps_ipv4 = sf_config_parser.get(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
+    vps_ipv4 = sf_config_parser.get(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_PUBLIC_IP_KEY.value]))
     ssh_con = SSHConnection(host=vps_ipv4, username=DEFAULT_LINODE_USERNAME)
     if not ssh_con.connect():
         print(f"{Emojis.ERROR_SIGN.value} SSH Connection Failed.")
@@ -300,7 +297,7 @@ def handle_coolify_synth(args):
     # get API token either from command args or from user input and add to .env
     coolify_api_token = args.api_token if args.api_token is not None else get_api_token_cli(provider="Coolify")
     # add the Coolify API token to the .env file
-    if(not addEnvVar(COOLIFY_API_TOKEN_ENV_VAR, coolify_api_token)):
+    if(not addEnvVar(EnvVarNames.COOLIFY_API_TOKEN_ENV_VAR.value, coolify_api_token)):
         return
     
     config_file = os.path.join(findProjectRoot(), CONFIG_FILE_NAME)
@@ -313,7 +310,7 @@ def handle_coolify_synth(args):
     if use_domain:
         endpoint = input("Please enter the domain name for the Coolify instance endpoint: ")
     else:
-        endpoint = sf_config_parser.get(list_to_dot_notation([VPS_CONFIGS_KEY, LINODE_PUBLIC_IP_KEY]))
+        endpoint = sf_config_parser.get(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_PUBLIC_IP_KEY.value]))
     #ask to use default port or specify a port
     use_default_port = yes_no_prompt("Would you like to use the default port for the Coolify instance?", additional_text=f"Default Port: {DEFAULT_COOLIFY_PORT}")
     if use_default_port:
@@ -347,7 +344,7 @@ def handle_coolify_project_create(args):
         return
     print(f"{Emojis.SOON.value} Creating a new Coolify project.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
-    coolify_client = CoolifyClient(os.environ[COOLIFY_API_TOKEN_ENV_VAR])
+    coolify_client = CoolifyClient(os.environ[EnvVarNames.COOLIFY_API_TOKEN_ENV_VAR.value])
     if not coolify_client.test_connection():
         return 
     coolify_client.create_project(project_name=args.name, project_description=args.description)
@@ -368,7 +365,7 @@ def handle_coolify_github_connect(args):
         return
     print(f"{Emojis.SOON.value} Creating a new GitHub Repo for your app and connecting it to your Coolify instance.")
     load_dotenv(os.path.join(findProjectRoot(), ".env"))
-    coolify_client = CoolifyClient(os.environ[COOLIFY_API_TOKEN_ENV_VAR])
+    coolify_client = CoolifyClient(os.environ[EnvVarNames.COOLIFY_API_TOKEN_ENV_VAR.value])
     if not coolify_client.test_connection():
         return
     github_access_token = args.access_token if args.access_token is not None else get_api_token_cli(provider="GitHub", token_type="Access")

@@ -8,19 +8,16 @@ from paramiko import RSAKey
 import os
 import shutil
 from tabulate import tabulate
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.utils.globals import (
-SSH_KEY_DIR_NAME,
-VPS_ROOT_PASSWORD_ENV_VAR, 
+SSH_KEY_DIR_NAME, 
 CONFIG_FILE_NAME,  
 SSH_KEY_FILE_NAME,
 LINODE_INSTANCE_PREFIX,
 Emojis,
 LinodeStatus,
-VPSKeys
+VPSKeys,
+EnvVarNames
 )
 from saasFactory.utils.cli import findProjectRoot, addEnvVar, get_user_choice, mb_to_gb, yes_no_prompt, root_dir_error_msg
 
@@ -88,7 +85,7 @@ class VPSProvider:
                 break
         
         # Add the root password to the .env file
-        if not addEnvVar(VPS_ROOT_PASSWORD_ENV_VAR, password):
+        if not addEnvVar(EnvVarNames.VPS_ROOT_PASSWORD_ENV_VAR.value, password):
             print("Error adding root password to .env file.")
     
 
@@ -281,9 +278,9 @@ class LinodeProvider(VPSProvider):
 
         # get root password from .env file
         load_dotenv(os.path.join(project_root, ".env"))
-        root_pass = os.getenv(VPS_ROOT_PASSWORD_ENV_VAR)
+        root_pass = os.getenv(EnvVarNames.VPS_ROOT_PASSWORD_ENV_VAR.value)
         if root_pass is None:
-            print(f"{Emojis.WARNING_SIGN.value} {VPS_ROOT_PASSWORD_ENV_VAR} not found in .env file. Please make sure it is set.")
+            print(f"{Emojis.WARNING_SIGN.value} {EnvVarNames.VPS_ROOT_PASSWORD_ENV_VAR.value} not found in .env file. Please make sure it is set.")
             return
         
         ssh_public_key = self.generate_ssh_key_pair(SSH_KEY_FILE_NAME)#, root_pass)
