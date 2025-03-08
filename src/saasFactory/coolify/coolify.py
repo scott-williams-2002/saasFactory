@@ -104,7 +104,7 @@ class CoolifyClient:
             self.connect()
             res = self.coolify_client.projects.create(project_name=project_name, project_description=project_description)
             if res.status_code == 201 or res.status_code == 200:
-                append_res = self.sf_config_parser.append(
+                append_res = self.sf_config_parser.append_nested(
                     list_to_dot_notation([CoolifyKeys.COOLIFY_CONFIGS_KEY.value, CoolifyKeys.COOLIFY_PROJECTS_PARENT_KEY.value]),
                     [{
                         CoolifyKeys.COOLIFY_NAME_KEY.value: project_name,

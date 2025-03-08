@@ -2,6 +2,13 @@ import yaml
 import os
 from collections import OrderedDict
 
+# Register custom representer for OrderedDict
+def represent_ordereddict(dumper, data):
+    return dumper.represent_dict(data.items())
+
+yaml.add_representer(OrderedDict, represent_ordereddict)
+yaml.SafeDumper.add_representer(OrderedDict, represent_ordereddict)
+
 class YAMLParser:
     def __init__(self, file_path: str) -> None:
         """
@@ -52,14 +59,12 @@ class YAMLParser:
 
         return current
 
-    def append(self, data: dict|str, value: any = None) -> bool:
+    def append(self, data: dict) -> bool:
         """
         Append new data to the existing data in the YAML file.
-        Supports both dictionaries and dot notation for appending a single key.
 
         Args:
-            data (dict|str): The data to be appended to the YAML file, or a dot notation key.
-            value (any): The value to be appended if data is a dot notation key.
+            data (dict): The data to be appended to the YAML file.
 
         Returns:
             bool: True if the data was successfully appended, False otherwise.
@@ -67,35 +72,52 @@ class YAMLParser:
         try:
             current_data = self.read() or OrderedDict()
 
-            if isinstance(data, dict):
-                # Convert current_data to OrderedDict to maintain order
-                current_data = OrderedDict(current_data)
-                # Merge the new data with the existing data
-                for key, val in data.items():
-                    current_data[key] = val
-            elif isinstance(data, str) and value is not None:
-                # Handle dot notation key
-                key_parts = data.split('.')
-                current = current_data
-
-                for part in key_parts[:-1]:
-                    if part not in current or not isinstance(current[part], dict):
-                        current[part] = OrderedDict()
-                    current = current[part]
-
-
-                if isinstance(value, list):
-                    current[key_parts[-1]] = current.get(key_parts[-1], []) + value
-                else:
-                    current[key_parts[-1]] = value
-            else:
-                raise ValueError("Invalid input: data must be a dictionary or a dot notation key with a value.")
+            # Convert current_data to OrderedDict to maintain order
+            current_data = OrderedDict(current_data)
+            # Merge the new data with the existing data
+            for key, val in data.items():
+                current_data[key] = val
 
             with open(self.file_path, 'w') as file:
                 yaml.safe_dump(current_data, file, default_flow_style=False, sort_keys=False)
             return True
         except Exception as e:
             print(f"Error appending data to {os.path.basename(self.file_path)}: {e}")
+            return False
+
+    def append_nested(self, key: str, value: any) -> bool:
+        """
+        Append new data to the existing data in the YAML file using dot notation for nested keys.
+
+        Args:
+            key (str): The dot notation key.
+            value (any): The value to be appended.
+
+        Returns:
+            bool: True if the data was successfully appended, False otherwise.
+        """
+        try:
+            current_data = self.read() or OrderedDict()
+
+            # Handle dot notation key
+            key_parts = key.split('.')
+            current = current_data
+
+            for part in key_parts[:-1]:
+                if part not in current or not isinstance(current[part], dict):
+                    current[part] = OrderedDict()
+                current = current[part]
+
+            if isinstance(value, list):
+                current[key_parts[-1]] = current.get(key_parts[-1], []) + value
+            else:
+                current[key_parts[-1]] = value
+
+            with open(self.file_path, 'w') as file:
+                yaml.safe_dump(current_data, file, default_flow_style=False, sort_keys=False)
+            return True
+        except Exception as e:
+            print(f"Error appending nested data to {os.path.basename(self.file_path)}: {e}")
             return False
             
     def remove(self, key: str) -> bool:

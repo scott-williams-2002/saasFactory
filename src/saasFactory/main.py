@@ -6,6 +6,7 @@ from saasFactory.vps.provider import LinodeProvider
 from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.coolify.coolify import CoolifyClient
+from saasFactory.utils.block_msgs import POST_COOLIFY_INSTALL_MSG
 from tabulate import tabulate
 
 from saasFactory.utils.cli import (
@@ -25,8 +26,7 @@ from saasFactory.utils.globals import (
     CONFIG_FILE_NAME, 
     PROJECT_DIR_NAME_SUFFIX, 
     DEFAULT_LINODE_VPS_CONFIG_TABLE,
-    DEFAULT_LINODE_USERNAME, 
-    POST_COOLIFY_INSTALL_MSG, 
+    DEFAULT_LINODE_USERNAME,  
     DEFAULT_COOLIFY_PORT
 )
 
@@ -278,7 +278,7 @@ def handle_coolify_install(args):
         print(f"{Emojis.ERROR_SIGN.value} VPS instance is not running.")
         print(f"Please ensure the VPS instance is running before installing coolify. Current status: {vps_status}")
    
-    print(f"{Emojis.CHECK_MARK.value} Attempting SSH connection to the VPS instance.")
+    print(f"{Emojis.CLOCK.value} Attempting SSH connection to the VPS instance.")
     sf_config_parser = YAMLParser(config_file)
     vps_ipv4 = sf_config_parser.get(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_PUBLIC_IP_KEY.value]))
     ssh_con = SSHConnection(host=vps_ipv4, username=DEFAULT_LINODE_USERNAME)
@@ -287,7 +287,7 @@ def handle_coolify_install(args):
         return
     print(f"{Emojis.CHECK_MARK.value} SSH Connection Successful.")
     
-    if not yes_no_prompt(f"Those commands will take a while {Emojis.CLOCK.value}  to execute. Are you sure you want to continue?", additional_text="\n\nThe following commands will be executed:\n" + tabulate([[VPSCommands.UPDATE_CMD.value], [VPSCommands.UPGRADE_CMD.value], [VPSCommands.COOLIFY_INSTALL_CMD.value]])):
+    if not yes_no_prompt(f"Those commands will take a while {Emojis.CLOCK.value} to execute. Are you sure you want to continue?", additional_text="\n\nThe following commands will be executed:\n" + tabulate([[VPSCommands.UPDATE_CMD.value], [VPSCommands.UPGRADE_CMD.value], [VPSCommands.COOLIFY_INSTALL_CMD.value]])):
         print(f"\n{Emojis.DYNAMITE.value} Aborted Coolify Installation.")
         return
 
@@ -348,7 +348,7 @@ def handle_coolify_synth(args):
     }
     if not omit_port:
         coolify_configs[CoolifyKeys.COOLIFY_PORT_KEY.value] = port #adds port to configs if not omitted
-    if not sf_config_parser.append(list_to_dot_notation([CoolifyKeys.COOLIFY_CONFIGS_KEY.value]), coolify_configs):
+    if not sf_config_parser.append_nested(list_to_dot_notation([CoolifyKeys.COOLIFY_CONFIGS_KEY.value]), coolify_configs):
         print(f"{Emojis.ERROR_SIGN.value} Coolify Configuration Failure.")
         return
     

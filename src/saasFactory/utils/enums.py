@@ -51,7 +51,7 @@ class Emojis(Enum):
     LOADING = "🔄️"
     DOLLAR = "💲"
     EXCLAMATION = "❗"
-    CLOCK = "⏱️"
+    CLOCK = " ⏱️"
     LOCK = "🔒"
     KEY = "🔑"
     DOCS = "📚"
