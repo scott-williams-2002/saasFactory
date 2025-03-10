@@ -4,16 +4,18 @@ from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_pr
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.utils.enums import CoolifyKeys, Emojis, GitHubRepos
-from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION, DEFAULT_COOLIFY_PORT, GIT_REPO_DIR_NAME, DEFAULT_NEW_GITHUB_REPO_NAME, DEFAULT_DEPLOY_KEY_PREFIX
+from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_SERVICE_NAME, DEFAULT_COOLIFY_PROJECT_DESCRIPTION, DEFAULT_COOLIFY_SERVICE_DESCRIPTION, DEFAULT_COOLIFY_PORT, GIT_REPO_DIR_NAME, DEFAULT_NEW_GITHUB_REPO_NAME, DEFAULT_DEPLOY_KEY_PREFIX, DEFAULT_COOLIFY_ENVIRONMENT_NAME
 from saasFactory.github.github_client import GitHubRepoClient
 from saasFactory.utils.id import generate_random_id
 from coolipy import Coolipy
 from coolipy.models.private_keys import PrivateKeysModelCreate
+from coolipy.models.service import ServiceModelCreate
 from tabulate import tabulate
 import os
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, PublicFormat
 import http.client
+from uuid import uuid4
 
 
 class CoolifyClient:
@@ -40,6 +42,7 @@ class CoolifyClient:
             return
         try:
             self.coolify_endpoint = coolify_configs.get(CoolifyKeys.COOLIFY_DOMAIN_KEY.value)
+            self.coolify_rest_client = http.client.HTTPConnection(self.coolify_endpoint, DEFAULT_COOLIFY_PORT)
             omit_port = coolify_configs.get(CoolifyKeys.COOLIFY_OMIT_PORT_KEY.value)
             use_https = coolify_configs.get(CoolifyKeys.COOLIFY_USE_HTTPS_KEY.value)
             if not omit_port:
@@ -108,9 +111,9 @@ class CoolifyClient:
             else:
                 project_name = input("Specify your Coolify project name: ")
         if project_description is None:
-            use_default_desc = yes_no_prompt(f"Use default Coolify project description '{DEFAULT_COOLIFY_DESCRIPTION}'?")
+            use_default_desc = yes_no_prompt(f"Use default Coolify project description '{DEFAULT_COOLIFY_PROJECT_DESCRIPTION}'?")
             if use_default_desc:
-                project_description = DEFAULT_COOLIFY_DESCRIPTION
+                project_description = DEFAULT_COOLIFY_PROJECT_DESCRIPTION
             else:
                 project_description = input("Specify your Coolify project description: ")
         try:
@@ -241,11 +244,10 @@ class CoolifyClient:
         try:
             # later on try to replace this with coolipy library
             self.connect()     
-            conn = http.client.HTTPConnection(self.coolify_endpoint, DEFAULT_COOLIFY_PORT)
             payload_dict = {
                 "project_uuid": project_uuid,
                 "server_uuid": server_uuid,
-                "environment_name": "production",
+                "environment_name": DEFAULT_COOLIFY_ENVIRONMENT_NAME,
                 "private_key_uuid": self.key_uuid,
                 "git_repository": source_url,
                 "git_branch": "main",
@@ -259,8 +261,8 @@ class CoolifyClient:
                 'Authorization': f"Bearer {self.api_key}",
                 'Content-Type': "application/json"
             }
-            conn.request("POST", "/api/v1/applications/private-deploy-key", payload, headers)
-            res = conn.getresponse()
+            self.coolify_rest_client.request("POST", "/api/v1/applications/private-deploy-key", payload, headers)
+            res = self.coolify_rest_client.getresponse()
             if res.status == 201 or res.status == 200:
                 print(f"{Emojis.CHECK_MARK.value} Successfully created git resource for project '{project_uuid}'.")
                 return True
@@ -318,6 +320,44 @@ class CoolifyClient:
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource: {e}")
             return
+        
+    def create_service(self, service_type: str) -> bool:
+        """
+        Creates a service on Coolify.
+
+        Args:
+            service_type (str): The type of the service. Must be one of DEFAULT_RESOURCE_PRODUCT_NAMES.
+        
+        Returns:
+            bool: True if the service was created successfully, False otherwise.
+        """
+        chosen_project_uuid = get_project_uuid(self.list_projects())
+        chosen_server_uuid = get_server_uuid(self.list_servers())
+        dummy_destination_uuid = str(uuid4()) # destination_uuid is not used in the create service API call but coolipy still requires it
+        try:
+            self.connect()
+            # Assuming there is a method in coolipy to create a service
+            res = self.coolify_client.services.create(ServiceModelCreate(
+                type=service_type,
+                name=DEFAULT_COOLIFY_SERVICE_NAME + service_type,
+                environment_name=DEFAULT_COOLIFY_ENVIRONMENT_NAME,
+                project_uuid=chosen_project_uuid,
+                server_uuid=chosen_server_uuid,
+                instant_deploy=False,
+                description=DEFAULT_COOLIFY_SERVICE_DESCRIPTION,
+                destination_uuid=dummy_destination_uuid,
+
+            ))
+            if res.status_code == 201 or res.status_code == 200:
+                print(f"{Emojis.CHECK_MARK.value} Successfully created service '{service_type}'.")
+                print(res)
+                return True
+            else:
+                print(f"{Emojis.ERROR_SIGN.value} Failed to create service '{service_type}'.")
+                return False
+        except Exception as e:
+            print(f"{Emojis.ERROR_SIGN.value} Failed to create service '{service_type}': {e}")
+            return False
 
 
 

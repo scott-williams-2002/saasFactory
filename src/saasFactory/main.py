@@ -7,6 +7,7 @@ from saasFactory.vps.ssh import SSHConnection
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.coolify.coolify import CoolifyClient
 from saasFactory.utils.block_msgs import POST_COOLIFY_INSTALL_MSG
+from saasFactory.utils.globals import DEFAULT_RESOURCE_PRODUCT_NAMES
 from tabulate import tabulate
 
 from saasFactory.utils.cli import (
@@ -135,6 +136,14 @@ def main():
         "--access_token", type=str, help="GitHub Access Token",
         required=False
     )
+
+    coolify_service_create_parser = coolify_subparser.add_parser(
+        "service_create", help="Create a resource for a Coolify project"
+    )
+    coolify_service_create_parser.add_argument(
+        "--product", type=str, help=f"Name of the service {DEFAULT_RESOURCE_PRODUCT_NAMES}",
+        required=False
+    )
 #---------------------------------------------------------------------------------------------------------
     args = parser.parse_args()
 
@@ -160,6 +169,8 @@ def main():
             handle_coolify_project_create(args)
         elif args.coolify_command == "github_connect":
             handle_coolify_github_connect(args)
+        elif args.coolify_command == "service_create":
+            handle_coolify_service_create(args)
 
 
 
@@ -390,6 +401,30 @@ def handle_coolify_github_connect(args):
         return
     github_access_token = args.access_token if args.access_token is not None else get_api_token_cli(provider="GitHub", token_type="Access")
     coolify_client.connect_github(github_access_token)
+
+def handle_coolify_service_create(args):
+    if findProjectRoot() is None:
+        root_dir_error_msg()
+        return
+    print(f"{Emojis.SOON.value} Creating a new Resource for your app and connecting it to your Coolify instance.")
+    load_dotenv(os.path.join(findProjectRoot(), ".env"))
+    coolify_client = CoolifyClient(os.environ[EnvVarNames.COOLIFY_API_TOKEN_ENV_VAR.value])
+    if not coolify_client.test_connection():
+        return
+    service_product = args.product
+    if service_product not in DEFAULT_RESOURCE_PRODUCT_NAMES or service_product is None:
+        print(f"{Emojis.ERROR_SIGN.value} Invalid resource product name.")
+        return
+    coolify_client.create_service(service_product)
+    #no list service as far as i know
+    # next steps are to get the services, deploy them, change their endpoints and get the important env vars to connect to frontend 
+    # need domain handling too which can tie to the services
+    # for something like convex or supabase, connect auth env vars to frontend automatically 
+
+
+
+def handle_cloudflare(args):
+    pass
 
     
         

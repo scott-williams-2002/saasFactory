@@ -19,9 +19,12 @@ DEFAULT_LINODE_VPS_CONFIG = {
 DEFAULT_LINODE_USERNAME = "root"
 DEFAULT_COOLIFY_PORT = 8000
 DEFAULT_COOLIFY_PROJECT_NAME = "sfy-coolify-project"
-DEFAULT_COOLIFY_DESCRIPTION = "A project created by saasFactory CLI."
+DEFAULT_COOLIFY_SERVICE_NAME = "sfy-coolify-service"
+DEFAULT_COOLIFY_PROJECT_DESCRIPTION = "A project created by saasFactory CLI."
+DEFAULT_COOLIFY_SERVICE_DESCRIPTION = "A service created by saasFactory CLI."
 DEFAULT_NEW_GITHUB_REPO_NAME = "sfy_coolify_project"
 DEFAULT_DEPLOY_KEY_PREFIX = "sfy_coolify_deploy_key_"
+DEFAULT_COOLIFY_ENVIRONMENT_NAME = "production"
 
 #Configurations Text Formatted:
 DEFAULT_LINODE_VPS_CONFIG_TEXT = "Here are the default Linode VPS Configs:\n" + "\n".join([f"{key}: {value}" for key, value in DEFAULT_LINODE_VPS_CONFIG.items()])
@@ -29,5 +32,8 @@ DEFAULT_LINODE_VPS_CONFIG_TABLE = "Here are the default Linode VPS Configs:\n" +
 
 #Resources Name Prefixes:
 LINODE_INSTANCE_PREFIX = "sfy-instance-"
+
+#Default Resource Products:
+DEFAULT_RESOURCE_PRODUCT_NAMES = ["convex", "supabase", "n8n", "pocketbase"]
 
 
