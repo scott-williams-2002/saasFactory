@@ -9,7 +9,7 @@ import os
 import shutil
 from tabulate import tabulate
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
-from saasFactory.utils.enums import Emojis, LinodeStatus, VPSKeys, EnvVarNames
+from saasFactory.utils.enums import Emojis, LinodeStatus, VPSKeys, EnvVarNames, CoolifyKeys
 from saasFactory.utils.globals import (
     SSH_KEY_DIR_NAME, 
     CONFIG_FILE_NAME,  
@@ -344,7 +344,6 @@ class LinodeProvider(VPSProvider):
         
         instance_to_delete = self.linode_client.linode.instances(Instance.id == instance_id) #object to call .delete() on
         instance_to_delete_label = instance_to_delete[0].label
-        instance_to_delete_id = instance_to_delete[0].id
         if instance_to_delete is None:
             print(f"{Emojis.ERROR_SIGN.value} No Linode instance found with the specified ID.")
             return 
@@ -368,6 +367,9 @@ class LinodeProvider(VPSProvider):
                     print(f"Removing {VPSKeys.LINODE_ID_KEY.value} and {VPSKeys.LINODE_PUBLIC_IP_KEY.value} from {CONFIG_FILE_NAME} file.")
                     sf_config_parser.remove(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_ID_KEY.value]))
                     sf_config_parser.remove(list_to_dot_notation([VPSKeys.VPS_CONFIGS_KEY.value, VPSKeys.LINODE_PUBLIC_IP_KEY.value]))
+                    # checking for coolify_configs
+                    if sf_config_parser.get(CoolifyKeys.COOLIFY_CONFIGS_KEY.value) is not None:
+                        sf_config_parser.remove(CoolifyKeys.COOLIFY_CONFIGS_KEY.value)
             except Exception as e:
                 print(f"{Emojis.ERROR_SIGN.value} Error deleting SSH keys and/or {VPSKeys.LINODE_ID_KEY.value} from {CONFIG_FILE_NAME} file. Error: {e}")
                 return

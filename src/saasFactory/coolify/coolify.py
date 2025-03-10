@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat
 import http.client
 
 
-
 class CoolifyClient:
     def __init__(self, api_key):
         self.api_key = api_key
@@ -31,7 +30,10 @@ class CoolifyClient:
         """
         Grabs Coolify configuration from the user's YAML file. Then creates a Coolify client object.
         """
-
+        project_root = findProjectRoot()
+        if project_root is None:
+            root_dir_error_msg()
+            return
         coolify_configs = self.sf_config_parser.get(CoolifyKeys.COOLIFY_CONFIGS_KEY.value)
         if coolify_configs is None:
             print(f"{Emojis.WARNING_SIGN.value} Coolify configurations not found in the config file.")
@@ -58,6 +60,7 @@ class CoolifyClient:
                 )
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create Coolify client: {e}")
+
     def test_connection(self) -> bool: 
         """
         Tests the connection to the Coolify API.
@@ -65,6 +68,10 @@ class CoolifyClient:
         Returns:
             bool: True if the connection was successful, False otherwise.
         """
+        project_root = findProjectRoot()
+        if project_root is None:
+            root_dir_error_msg()
+            return
         try:
             self.connect()
             list_servers_res = self.coolify_client.servers.list()
@@ -89,6 +96,11 @@ class CoolifyClient:
         Returns:
             bool: True if the project was created successfully, False otherwise. Still returns True if project created but failed to update the config file.
         """
+        project_root = findProjectRoot()
+        if project_root is None:
+            root_dir_error_msg()
+            return
+        
         if project_name is None:
             use_default_name = yes_no_prompt(f"Use default Coolify project name '{DEFAULT_COOLIFY_PROJECT_NAME}'?")
             if use_default_name:
@@ -162,8 +174,8 @@ class CoolifyClient:
             if res.status_code ==  200 or res.status_code == 201:
                 servers = res.data
                 return [{
-                    "name": server.name,
-                    "uuid": server.uuid, 
+                    CoolifyKeys.COOLIFY_NAME_KEY.value: server.name,
+                    CoolifyKeys.COOLIFY_UUID_KEY.value: server.uuid, 
                 } for server in servers]
             else:
                 print(f"{Emojis.ERROR_SIGN.value} Failed to list servers.")
@@ -193,7 +205,7 @@ class CoolifyClient:
             print(f"{Emojis.ERROR_SIGN.value} Failed to generate private key: {e}")
 
         encoded_key = b64encode(private_bytes).decode("utf-8")
-        key_title = "github_deploy_key"
+        key_title = DEFAULT_DEPLOY_KEY_PREFIX + generate_random_id()
 
         try:
             self.connect()
@@ -227,6 +239,7 @@ class CoolifyClient:
             bool: True if the git resource was created successfully, False otherwise.
         """
         try:
+            # later on try to replace this with coolipy library
             self.connect()     
             conn = http.client.HTTPConnection(self.coolify_endpoint, DEFAULT_COOLIFY_PORT)
             payload_dict = {
@@ -266,6 +279,11 @@ class CoolifyClient:
             github_access_token (str): The GitHub access token.
         
         """
+        project_root = findProjectRoot()
+        if project_root is None:
+            root_dir_error_msg()
+            return
+        
         chosen_repo_url = get_github_url()
         chosen_new_remote_repo_name = get_new_remote_repo_name()
         chosen_project_uuid = get_project_uuid(self.list_projects())
@@ -275,10 +293,16 @@ class CoolifyClient:
             return
         
         try:
-            self.github_client = GitHubRepoClient(github_access_token)
-            self.github_client.clone_repo(chosen_repo_url, os.path.join(os.getcwd(), GIT_REPO_DIR_NAME))
+            self.github_client = GitHubRepoClient(github_access_token, chosen_new_remote_repo_name, os.path.join(os.getcwd(), GIT_REPO_DIR_NAME))
+            self.github_client.clone_repo(chosen_repo_url)
             self.github_client.create_private_repo(chosen_new_remote_repo_name)
-            self.github_client.add_commit_push(GIT_REPO_DIR_NAME, chosen_new_remote_repo_name)
+            if yes_no_prompt("Remove old .git folder and initialize new git repository?"):
+                self.github_client.remove_old_init()
+            else:
+                print(f"{Emojis.WARNING_SIGN.value} Skipping removal of old .git folder and initialization of new git repository.")
+                self.github_client.remove_upstream()
+            self.github_client.add_upstream()
+            self.github_client.add_commit_push()
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to connect to GitHub: {e}")
             return
@@ -294,14 +318,11 @@ class CoolifyClient:
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource: {e}")
             return
-        
 
 
-#start by creating a deployment key, then prompting the user to add it to their github repo, 
-#  then creating a project from dockerfile with dev and prod envs 
-#  then see about creating a base next repo with the correct configs for deployment that can be forked 
-#  try to use the github cli to do all of this or the github api rather than using the web interface
 
+# Functions to get user input for Coolify operations
+#---------------------------------------------------
 
 def get_github_url() -> str:
     """
