@@ -4,8 +4,9 @@ from saasFactory.utils.cli import findProjectRoot, root_dir_error_msg, yes_no_pr
 from saasFactory.utils.globals import CONFIG_FILE_NAME
 from saasFactory.utils.yaml import YAMLParser, list_to_dot_notation
 from saasFactory.utils.enums import CoolifyKeys, Emojis, GitHubRepos
-from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION, DEFAULT_COOLIFY_PORT
+from saasFactory.utils.globals import DEFAULT_COOLIFY_PROJECT_NAME, DEFAULT_COOLIFY_DESCRIPTION, DEFAULT_COOLIFY_PORT, GIT_REPO_DIR_NAME, DEFAULT_NEW_GITHUB_REPO_NAME, DEFAULT_DEPLOY_KEY_PREFIX
 from saasFactory.github.github_client import GitHubRepoClient
+from saasFactory.utils.id import generate_random_id
 from coolipy import Coolipy
 from coolipy.models.private_keys import PrivateKeysModelCreate
 from tabulate import tabulate
@@ -91,7 +92,7 @@ class CoolifyClient:
         if project_name is None:
             use_default_name = yes_no_prompt(f"Use default Coolify project name '{DEFAULT_COOLIFY_PROJECT_NAME}'?")
             if use_default_name:
-                project_name = DEFAULT_COOLIFY_PROJECT_NAME
+                project_name = DEFAULT_COOLIFY_PROJECT_NAME + generate_random_id()
             else:
                 project_name = input("Specify your Coolify project name: ")
         if project_description is None:
@@ -226,28 +227,8 @@ class CoolifyClient:
             bool: True if the git resource was created successfully, False otherwise.
         """
         try:
-            #from coolipy.models.applications import ApplicationPrivateGHModelCreate
-            #from coolipy.constants import COOLIFY_BUILD_PACKS
-            #
-            #app_data = ApplicationPrivateGHModelCreate(
-            #    project_uuid="your_project_uuid",
-            #    server_uuid="your_server_uuid",
-            #    environment_name="production",
-            #    ports_exposes="8080",
-            #    github_app_uuid="your_github_app_uuid",
-            #    git_repository="your_github_repo",
-            #    git_branch="main",
-            #    build_pack=COOLIFY_BUILD_PACKS.dockerfile,
-            #    instant_deploy=True,
-            #    name="MyApp"
-            #)
-            #
-            #new_app = coolify_client.applications.create(app_data)
-            self.connect()
-            
+            self.connect()     
             conn = http.client.HTTPConnection(self.coolify_endpoint, DEFAULT_COOLIFY_PORT)
-
-
             payload_dict = {
                 "project_uuid": project_uuid,
                 "server_uuid": server_uuid,
@@ -259,19 +240,14 @@ class CoolifyClient:
                 "ports_exposes": "3000",
                 "git_commit_sha": "HEAD"
             }
+
             payload = json.dumps(payload_dict)
             headers = {
                 'Authorization': f"Bearer {self.api_key}",
                 'Content-Type': "application/json"
             }
-
             conn.request("POST", "/api/v1/applications/private-deploy-key", payload, headers)
-
             res = conn.getresponse()
-            data = res.read()
-
-            print(data.decode("utf-8"))
-            #print(res.data)
             if res.status == 201 or res.status == 200:
                 print(f"{Emojis.CHECK_MARK.value} Successfully created git resource for project '{project_uuid}'.")
                 return True
@@ -285,56 +261,36 @@ class CoolifyClient:
     def connect_github(self, github_access_token: str) -> None:
         """
         Connects to the user's GitHub account. Look at projects in config yaml and ask which to associate to if not chosen.
+
+        Args:
+            github_access_token (str): The GitHub access token.
+        
         """
-        #list project choices from globals - refine later
-        premade_repo_choices = "Premade repos:\n" + tabulate([[repo.name, repo.value] for repo in GitHubRepos])
-        use_premade = yes_no_prompt("Use a premade GitHub repository?", additional_text=premade_repo_choices)
-
-        if use_premade:
-            repos_list  = [[str(i), repo.name, repo.value] for i, repo in enumerate(GitHubRepos)]
-            repo_choice = get_user_choice(repos_list, use_table=True, table_headers=["#", "Name", "Link"])
-            chosen_repo_url = repos_list[repo_choice][2]
-        else:
-            chosen_repo_url = input("Enter the URL of the GitHub repository you want to associate with Coolify: ")
-
-        #list projects on coolify
-        projects = self.list_projects() # returns a list of dicts with project name and uuid
-        chosen_project_idx = get_user_choice([[i, project[CoolifyKeys.COOLIFY_NAME_KEY.value]] for i, project in enumerate(projects)], use_table=True, table_headers=["#", "Project Name"])
-        chosen_project_uuid = projects[chosen_project_idx][CoolifyKeys.COOLIFY_UUID_KEY.value]
+        chosen_repo_url = get_github_url()
+        chosen_new_remote_repo_name = get_new_remote_repo_name()
+        chosen_project_uuid = get_project_uuid(self.list_projects())
         pub_key = self.create_deploy_key(chosen_project_uuid)
-
-        servers = self.list_servers()
-        if len(servers) == 0:
-            print(f"{Emojis.ERROR_SIGN.value} No servers found on Coolify. Please create a server first.")
+        chosen_server_uuid = get_server_uuid(self.list_servers())
+        if chosen_repo_url is None or chosen_project_uuid is None or chosen_server_uuid is None:
             return
-        if len(servers) == 0:
-            chosen_server_uuid = servers[0][CoolifyKeys.COOLIFY_UUID_KEY.value]
-        else:
-            chosen_server_idx = get_user_choice([[i, server[CoolifyKeys.COOLIFY_NAME_KEY.value]] for i, server in enumerate(servers)], use_table=True, table_headers=["#", "Server Name"])
-            chosen_server_uuid = servers[chosen_server_idx][CoolifyKeys.COOLIFY_UUID_KEY.value]
-
+        
         try:
-            self.github_client = GitHubRepoClient(github_access_token) #<<<<<<<<<<<<<<<<<<<<<<< havent tested this yet
-            clone_path = "frontend"
-            repo_name = "coolify_repo_github"
-            self.github_client.clone_repo(chosen_repo_url, os.path.join(os.getcwd(), clone_path))
-            self.github_client.create_private_repo(repo_name)
-            self.github_client.push_to_repo(clone_path, repo_name)
-
-
+            self.github_client = GitHubRepoClient(github_access_token)
+            self.github_client.clone_repo(chosen_repo_url, os.path.join(os.getcwd(), GIT_REPO_DIR_NAME))
+            self.github_client.create_private_repo(chosen_new_remote_repo_name)
+            self.github_client.add_commit_push(GIT_REPO_DIR_NAME, chosen_new_remote_repo_name)
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to connect to GitHub: {e}")
             return
         
-        # connect to github and add deploy key
-        if not self.github_client.add_deploy_keys("coolify_deploy_key", pub_key):
+        deploy_key_name = DEFAULT_DEPLOY_KEY_PREFIX + generate_random_id()
+        if not self.github_client.add_deploy_keys(deploy_key_name, pub_key):
             print(f"{Emojis.ERROR_SIGN.value} Failed to add deploy key to GitHub repository.")
             return
-        
-        # add a source to coolify project
+    
         try:
-            print(f"github url {self.github_client.get_repo_url()}")
-            self.create_git_resource(chosen_project_uuid, chosen_server_uuid, self.github_client.get_repo_url()) # repo url is the one i own not the public one so need the newly created one
+            if self.create_git_resource(chosen_project_uuid, chosen_server_uuid, self.github_client.coolify_deploy_repo_url):
+                print(f"{Emojis.CHECK_MARK.value} Successfully created GitHub Coolify Deployment Connection. \nGitHub URL: {self.github_client.coolify_deploy_repo_url}")
         except Exception as e:
             print(f"{Emojis.ERROR_SIGN.value} Failed to create git resource: {e}")
             return
@@ -345,3 +301,66 @@ class CoolifyClient:
 #  then creating a project from dockerfile with dev and prod envs 
 #  then see about creating a base next repo with the correct configs for deployment that can be forked 
 #  try to use the github cli to do all of this or the github api rather than using the web interface
+
+
+def get_github_url() -> str:
+    """
+    Prompts the user to either use a premade GitHub repository or enter a custom URL.
+
+    Returns:
+        str: The URL of the GitHub repository.
+    """
+    premade_repo_choices = "Premade repos:\n" + tabulate([[repo.name, repo.value] for repo in GitHubRepos])
+    use_premade = yes_no_prompt("Use a premade GitHub repository?", additional_text=premade_repo_choices)
+    if use_premade:
+        repos_list  = [[str(i), repo.name, repo.value] for i, repo in enumerate(GitHubRepos)]
+        repo_choice = get_user_choice(repos_list, use_table=True, table_headers=["#", "Name", "Link"])
+        chosen_repo_url = repos_list[repo_choice][2]
+    else:
+        chosen_repo_url = input("Enter the URL of the GitHub repository you want to associate with Coolify: ")
+    return chosen_repo_url
+
+def get_new_remote_repo_name() -> str:
+    """
+    Prompts the user to either pick the default name for the remote GitHub repository to create or enter a new name.
+
+    Returns:
+        str: The name of the new remote repository.
+    """
+    use_default_name = yes_no_prompt(f"Use default remote repository name: '{DEFAULT_NEW_GITHUB_REPO_NAME}'?")
+    if use_default_name:
+        return DEFAULT_NEW_GITHUB_REPO_NAME + generate_random_id()
+    else:
+        return input("Enter the name of the new remote GitHub repository that will be created: ")
+
+def get_project_uuid(projects: list[str]) -> str:
+    """
+    Prompts the user to choose a project from a list of projects.
+
+    Args:
+        projects (list[str]): A list of project dictionaries.
+    Returns:
+        str: The UUID of the chosen project.
+    """
+    chosen_project_idx = get_user_choice([[i, project[CoolifyKeys.COOLIFY_NAME_KEY.value]] for i, project in enumerate(projects)], use_table=True, table_headers=["#", "Project Name"])
+    chosen_project_uuid = projects[chosen_project_idx][CoolifyKeys.COOLIFY_UUID_KEY.value]
+    return chosen_project_uuid
+
+def get_server_uuid(servers: list[str]) -> str:
+    """
+    Prompts the user to choose a server from a list of servers.
+
+    Args:
+        servers (list[str]): A list of server dictionaries.
+    Returns:
+        str: The UUID of the chosen server.
+    """
+    if len(servers) == 0:
+        print(f"{Emojis.ERROR_SIGN.value} No servers found on Coolify. Please create a server first.")
+        return None
+    if len(servers) == 1:
+        chosen_server_uuid = servers[0][CoolifyKeys.COOLIFY_UUID_KEY.value]
+    else:
+        chosen_server_idx = get_user_choice([[i, server[CoolifyKeys.COOLIFY_NAME_KEY.value]] for i, server in enumerate(servers)], use_table=True, table_headers=["#", "Server Name"])
+        chosen_server_uuid = servers[chosen_server_idx][CoolifyKeys.COOLIFY_UUID_KEY.value]
+    return chosen_server_uuid
